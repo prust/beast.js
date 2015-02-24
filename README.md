@@ -8,7 +8,7 @@ Screenshot of original DOS game:
 
 Screenshot of my Javascript remake:
 
-![Screenshot of remake](https://raw.githubusercontent.com/prust/beast.js/master/screenshot.png =371x279)
+<img src="https://raw.githubusercontent.com/prust/beast.js/master/screenshot.png" width="371" height="279">
 
 ## Instructions
 
