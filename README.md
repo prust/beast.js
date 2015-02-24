@@ -1,6 +1,6 @@
 # Beast.js
 
-An ultra-simple clone of the 1984 [Beast](http://theodor.lauppert.ws/games/beast.htm) DOS game that I had fond memories of playing as kid. Credit for all the gameplay ideas goes to the original authors: Dan Baker, Alan Brown, Mark Hamilton and Derrick Shadel.
+An ultra-simple clone of the 1984 [Beast](http://theodor.lauppert.ws/games/beast.htm) DOS game that I had fond memories of playing as kid. I made it after working through the first part of Mozilla's [canvas tutorial](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial) with my 9-year-old son. Credit for all the gameplay ideas goes to the original authors: Dan Baker, Alan Brown, Mark Hamilton and Derrick Shadel.
 
 ![Screenshot of original DOS game](http://theodor.lauppert.ws/games/s/screen1/ascii/beast.png)
 
