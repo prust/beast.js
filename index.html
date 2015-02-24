@@ -1,0 +1,244 @@
+<canvas id="tutorial" width="1800" height="1800"></canvas>
+<script>
+document.body.style.overflow = 'hidden';
+var canvas = document.getElementById('tutorial');
+var ctx = canvas.getContext('2d');
+
+var blocks = [], beasts = [], player, sprites;
+var playing = true;
+
+function init() {
+  player = new Player(18, 18);
+  spawnBeastsBlocks();
+  sprites = blocks.concat(beasts);
+  sprites.push(player);
+
+  requestAnimationFrame(draw);
+  setInterval(function() {
+    if (!playing) return;
+
+    beasts.forEach(function(beast) {
+        beast.move();
+    });
+  }, 500);
+}
+
+var LEFT = 37;
+var RIGHT = 39;
+var UP = 40;
+var DOWN = 38;
+var SPACE = 32;
+document.addEventListener('keyup', function(evt) {
+    if (evt.keyCode == SPACE)
+        playing = !playing;
+    if (!playing) return;
+
+    if (evt.keyCode == LEFT)
+        player.move(-1, 0);
+    else if (evt.keyCode == RIGHT)
+        player.move(1, 0);
+    else if (evt.keyCode == UP)
+        player.move(0, 1);
+    else if (evt.keyCode == DOWN)
+        player.move(0, -1);
+});
+
+function spawnBeastsBlocks() {
+    for (var x = 0; x < 36; ++x) {
+        for (var y = 0; y < 36; ++y) {
+            if (x != player.x && y != player.y) {
+              if (Math.random() > 0.993)
+                  beasts.push(new Beast(x, y));
+              else if (Math.random() > 0.70)
+                  blocks.push(new Block(x, y));
+          }
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0,0,1800,1800); // clear canvas
+
+    sprites.forEach(function(sprite) {
+        sprite.draw();
+    });
+    requestAnimationFrame(draw);
+}
+
+function collide(sprite, sprites) {
+    var n_sprites = sprites.length;
+    for (var n = 0; n < n_sprites; n++)
+        if (sprites[n] != sprite && sprite.x == sprites[n].x && sprite.y == sprites[n].y)
+            return sprites[n];
+}
+
+function Sprite() {
+}
+Sprite.prototype.move = function(x, y) {
+    this.x += x;
+    this.y += y;
+    var collide_block = collide(this, blocks);
+    if (collide_block)
+        collide_block.move(x, y);
+}
+
+function Player(x, y) {
+    this.x = x;
+    this.y = y;
+}
+inherits(Player, Sprite);
+Player.prototype.draw = function() {
+    drawPlayer(this.x, this.y);
+};
+
+function Beast(x, y) {
+    this.x = x;
+    this.y = y;
+}
+Beast.prototype.draw = function() {
+    drawBeast(this.x, this.y);
+};
+Beast.prototype.kill = function() {
+    var ix = beasts.indexOf(this);
+    beasts.splice(ix, 1);
+    ix = sprites.indexOf(this);
+    sprites.splice(ix, 1);
+}
+
+// move toward the player if possible but semi-randomly
+Beast.prototype.move = function(x, y) {
+  // TODO: need to handle the case if a beast is pushed into another beast
+  // they both get squished if there's a block at the end?
+  // and they both get pushed if there's not?
+  if (x || y) {
+    this.x += x;
+    this.y += y;
+    return;
+  }
+
+  var diff_x = this.x - player.x;
+  var diff_y = this.y - player.y;
+
+  // x is furthest away from player; need to move that way
+  var dir = {x: 0, y: 0};
+  if (diff_x < 0)
+    dir.x = 1;
+  else if (diff_x > 0)
+    dir.x = -1;
+  // y is furthest; move that way
+  if (diff_y < 0)
+    dir.y = 1;
+  else if (diff_y > 0)
+    dir.y = -1;
+
+  var orig_dir = clone(dir);
+
+    if (collide(add(this, dir), blocks)) {
+      var directions = [];
+      if (dir.x)
+        dir.x = 0;
+      else
+        dir.x = (Math.round(Math.random()) * 2) - 1;
+      if (!collide(add(this, dir), blocks))
+        directions.push(clone(dir));
+
+      dir = clone(orig_dir);
+      if (dir.y)
+        dir.y = 0;
+      else
+        dir.y = (Math.round(Math.random()) * 2) - 1;
+      if (!collide(add(this, dir), blocks))
+        directions.push(clone(dir));
+
+      // Clearly we're not trying every combination
+      // figure out which ones we're missing!
+
+      if (!directions.length) {
+        dir = orig_dir;
+        dir.x = -dir.x;
+        if (!collide(add(this, dir), blocks))
+            directions.push(clone(dir));
+        dir.y = -dir.y
+        if (!collide(add(this, dir), blocks))
+            directions.push(clone(dir));
+        dir.x = 0;
+        if (!collide(add(this, dir), blocks))
+            directions.push(clone(dir));
+      }
+      dir = directions[random(directions.length - 1)];
+    }
+    if (dir) {
+      this.x += dir.x;
+      this.y += dir.y;
+    }
+
+  // game over!
+  if (this.x == player.x && this.y == player.y)
+    playing = false;
+}
+
+function add(sprite1, sprite2) {
+    return {x: sprite1.x + sprite2.x, y: sprite1.y + sprite2.y};
+}
+function clone(dir) {
+    return {x: dir.x, y: dir.y};
+}
+
+function Block(x, y) {
+  this.x = x;
+  this.y = y;
+}
+inherits(Block, Sprite);
+Block.prototype.draw = function() {
+  drawBlock(this.x, this.y);
+};
+Block.prototype.move = function(x, y) {
+    Block.super_.prototype.move.call(this, x, y);
+    var collide_beast = collide(this, beasts);
+    if (collide_beast) {
+        if (collide(add(this, {x: x, y: y}), blocks))
+            collide_beast.kill();
+        else
+            collide_beast.move(x, y);
+    }
+}
+
+function drawBlock(x, y) {
+  ctx.fillStyle = "rgb(200,200,200)";
+  ctx.fillRect (x * 20, y * 20, 20, 20);
+}
+
+function drawPlayer(x, y) {
+  ctx.fillStyle = "rgb(100,100,255)";
+  ctx.fillRect (x * 20, y * 20, 20, 20);
+}
+
+function drawBeast(x, y) {
+  ctx.fillStyle = "rgb(0,0,0)";
+  ctx.fillRect (x * 20, y * 20, 20, 20);
+}
+
+// copied from Node.js
+function inherits(ctor, superCtor) {
+  ctor.super_ = superCtor;
+  ctor.prototype = Object.create(superCtor.prototype, {
+    constructor: {
+      value: ctor,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+}
+
+// copied from underscore.js
+function random(min, max) {
+    if (max == null) {
+      max = min;
+      min = 0;
+    }
+    return min + Math.floor(Math.random() * (max - min + 1));
+  };
+
+init();
+</script>
