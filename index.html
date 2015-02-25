@@ -119,54 +119,48 @@ Beast.prototype.move = function(x, y) {
   var diff_x = this.x - player.x;
   var diff_y = this.y - player.y;
 
-  // x is furthest away from player; need to move that way
+  // figure out optimal direction for beast to move
   var dir = {x: 0, y: 0};
-  if (diff_x < 0)
-    dir.x = 1;
-  else if (diff_x > 0)
-    dir.x = -1;
-  // y is furthest; move that way
-  if (diff_y < 0)
-    dir.y = 1;
-  else if (diff_y > 0)
-    dir.y = -1;
+  if (diff_x)
+    dir.x = diff_x < 0 ? 1 : -1;
+  if (diff_y)
+    dir.y = diff_y < 0 ? 1 : -1;
 
-  var orig_dir = clone(dir);
+  // blocks-n-beasts (avoid colliding w/ blocks or other beasts)
+  var bnb = blocks.concat(beasts);
+  
+  var directions = [];
+  if (!collide(add(this, dir), bnb))
+    directions.push(dir);
 
-    if (collide(add(this, dir), blocks)) {
-      var directions = [];
-      if (dir.x)
-        dir.x = 0;
-      else
-        dir.x = (Math.round(Math.random()) * 2) - 1;
-      if (!collide(add(this, dir), blocks))
-        directions.push(clone(dir));
+  var clock = clone(dir);
+  var counter = clone(dir);
+  // work your way both ways around the clock
+  for (var n = 0; n < 3; ++n) {
+    clock = clockwise(clock);
+    counter = counterclock(counter);
+    if (!collide(add(this, clock), bnb))
+      directions.push(clock);
+    if (!collide(add(this, counter), bnb))
+      directions.push(counter);
+  }
 
-      dir = clone(orig_dir);
-      if (dir.y)
-        dir.y = 0;
-      else
-        dir.y = (Math.round(Math.random()) * 2) - 1;
-      if (!collide(add(this, dir), blocks))
-        directions.push(clone(dir));
+  // add the exact opposite direction
+  clock = clockwise(clock);
+  if (!collide(add(this, clock), bnb))
+    directions.push(clock);
 
-      // Clearly we're not trying every combination
-      // figure out which ones we're missing!
-
-      if (!directions.length) {
-        dir = orig_dir;
-        dir.x = -dir.x;
-        if (!collide(add(this, dir), blocks))
-            directions.push(clone(dir));
-        dir.y = -dir.y
-        if (!collide(add(this, dir), blocks))
-            directions.push(clone(dir));
-        dir.x = 0;
-        if (!collide(add(this, dir), blocks))
-            directions.push(clone(dir));
-      }
-      dir = directions[random(directions.length - 1)];
+  var dir;
+  for (var n = 0; n < directions.length; n++) {
+    if (n == directions.length - 1) {
+      dir = directions[n];
     }
+    else if (Math.random() < 0.7) {
+      dir = directions[n];
+      break;
+    }
+  }
+
     if (dir) {
       this.x += dir.x;
       this.y += dir.y;
@@ -216,6 +210,47 @@ function drawPlayer(x, y) {
 function drawBeast(x, y) {
   ctx.fillStyle = "rgb(0,0,0)";
   ctx.fillRect (x * 20, y * 20, 20, 20);
+}
+
+var coords = [
+  {x: 0, y: -1},
+  {x: 1, y: -1},
+  {x: 1, y: 0},
+  {x: 1, y: 1},
+  {x: 0, y: 1},
+  {x: -1, y: 1},
+  {x: -1, y: 0},
+  {x: -1, y: -1}
+];
+
+function clockwise(vect) {
+  var ix = whereIndex(coords, {x: vect.x, y: vect.y});
+  ix++;
+
+  // cycle around the circle
+  if (ix >= coords.length)
+    ix = 0;
+  
+  return clone(coords[ix]);
+}
+
+function counterclock(vect) {
+  var ix = whereIndex(coords, {x: vect.x, y: vect.y});
+  ix--;
+
+  // cycle around the circle
+  if (ix < 0)
+    ix = coords.length - 1;
+
+  return clone(coords[ix]);
+}
+
+function whereIndex(arr, vect) {
+  var len = arr.length;
+  for (var n = 0; n < len; n++)
+    if (arr[n].x == vect.x && arr[n].y == vect.y)
+      return n;
+  throw new Error('Unable to find: ' + vect. x + ', ' + vect.y);
 }
 
 // copied from Node.js

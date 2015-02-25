@@ -12,11 +12,11 @@ Screenshot of my Javascript remake:
 
 ## Instructions
 
-Use the arrow keys to move. You are the blue rectangle, if the black "beasts" touch you, you die (you can tell because the game stops moving). Refresh the browser to start again. You can squish the Beasts between two bricks -- squish all the beasts and you win.
+Use the arrow keys to move. You are the blue square, if the black "beasts" touch you, you die (you can tell because the game stops moving). Refresh the browser to start again. You can squish the Beasts between two bricks -- squish all the beasts and you win.
 
-## Known Issues
+## Bug Reports
 
-There are still a couple minor bugs, for instance if you push a block towards a beast and they are moving towards you at approximately the same time, they can move through the block and kill you. Also, the beasts aren't quite as smart about making their way to your position as they could be, there's still a bug or two in that code.
+If you see any bugs, please report them on the [issues page](https://github.com/prust/beast.js/issues).
 
 ## Play!
 
