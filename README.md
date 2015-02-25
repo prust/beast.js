@@ -2,11 +2,13 @@
 
 An ultra-simple clone of the 1984 [Beast](http://theodor.lauppert.ws/games/beast.htm) DOS game that I had fond memories of playing as kid. I made it after working through the first part of Mozilla's [canvas tutorial](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial) with my 9-year-old son. Credit for all the gameplay ideas goes to the original authors: Dan Baker, Alan Brown, Mark Hamilton and Derrick Shadel.
 
-Screenshot of original DOS game:
+## Screenshots
+
+The original [1984 DOS game](http://theodor.lauppert.ws/games/beast.htm) (may have been written in Assembler, the 4 guys who wrote it worked on WordPerfect at BYU and worked in Assembler -- there wasn't yet a reliable C compiler for the IBM PC at that time):
 
 ![Screenshot of original DOS game](http://theodor.lauppert.ws/games/s/screen1/ascii/beast.png)
 
-Screenshot of my Javascript remake:
+My Javascript remake:
 
 <img src="https://raw.githubusercontent.com/prust/beast.js/master/screenshot.png" width="371" height="279">
 
@@ -17,6 +19,13 @@ Use the arrow keys to move. You are the blue square, if the black "beasts" touch
 ## Bug Reports
 
 If you see any bugs, please report them on the [issues page](https://github.com/prust/beast.js/issues).
+
+## Roadmap
+
+* Add two Beast Nests that spawn beasts (dark grey, 2x2)
+* Add four Dynamite blocks (red) that explode when they come in contact with another dynamite block - the only way to destroy a Beast Nest
+
+Other ideas: Possibly a super-beast that is the final product of a beast nest and can only be destroyed by dynamite. You want to destroy both nests before any of these are spawned because they move quick, push blocks around and are hard to kill.
 
 ## Play!
 
