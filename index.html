@@ -4,14 +4,15 @@ document.body.style.overflow = 'hidden';
 var canvas = document.getElementById('tutorial');
 var ctx = canvas.getContext('2d');
 
-var blocks = [], beasts = [], nests = [], player, sprites;
+var blocks = [], beasts = [], nests = [], dynamites = [], sprites = [];
+var player;
 var playing = true;
 var snd_effect_time = Date.now();
 
 function init() {
   player = new Player(18, 18);
   spawnBeastsBlocks();
-  sprites = blocks.concat(beasts, nests);
+  sprites = sprites.concat(blocks, beasts, nests, dynamites);
   sprites.push(player);
 
   requestAnimationFrame(draw);
@@ -54,10 +55,10 @@ document.addEventListener('keydown', function(evt) {
 });
 
 document.addEventListener('keyup', function(evt) {
-    if (evt.keyCode == SPACE)
-        playing = !playing;
+  if (evt.keyCode == SPACE)
+      playing = !playing;
 
-    keys[evt.keyCode] = 0;
+  keys[evt.keyCode] = 0;
 });
 
 setInterval(function() {
@@ -69,18 +70,20 @@ setInterval(function() {
 }, 100);
 
 function spawnBeastsBlocks() {
-    for (var x = 0; x < 36; ++x) {
-        for (var y = 0; y < 36; ++y) {
-            if (x != player.x && y != player.y) {
-              if (Math.random() > 0.998)
-                nests.push(new Nest(x, y));
-              else if (Math.random() > 0.993)
-                beasts.push(new Beast(x, y));
-              else if (Math.random() > 0.70)
-                blocks.push(new Block(x, y));
-          }
-        }
+  for (var x = 0; x < 36; ++x) {
+    for (var y = 0; y < 36; ++y) {
+        if (x != player.x && y != player.y) {
+          if (Math.random() > 0.998)
+            nests.push(new Nest(x, y));
+          else if (Math.random() > 0.996)
+            dynamites.push(new Dynamite(x, y));
+          else if (Math.random() > 0.993)
+            beasts.push(new Beast(x, y));
+          else if (Math.random() > 0.70)
+            blocks.push(new Block(x, y));
+      }
     }
+  }
 }
 
 function draw() {
@@ -108,9 +111,9 @@ function Sprite() {
 Sprite.prototype.move = function(vect) {  
   this.x += vect.x;
   this.y += vect.y;
-  var collide_block = collide(this, blocks);
-  if (collide_block)
-      collide_block.move(vect);
+  var sprite = collide(this, sprites);
+  if (sprite && sprite.movable)
+    sprite.move(vect);
 };
 Sprite.prototype.draw = function() {
   ctx.fillStyle = this.fillStyle;
@@ -127,6 +130,7 @@ function Player(x, y) {
   this.x = x;
   this.y = y;
   this.fillStyle = "rgb(100,100,255)";
+  this.arr = [this];
 }
 inherits(Player, Sprite);
 
@@ -221,6 +225,8 @@ function Block(x, y) {
   this.x = x;
   this.y = y;
   this.fillStyle = "rgb(200,200,200)";
+  this.movable = true;
+  this.arr = blocks;
 }
 inherits(Block, Sprite);
 Block.prototype.move = function(vect) {
@@ -239,6 +245,7 @@ function Nest(x, y) {
   this.y = y;
   this.fillStyle = "rgb(115,115,115)";
   this.interval_id = setInterval(this.spawnBeast.bind(this), 10 * 1000);
+  this.arr = nests;
 }
 inherits(Nest, Sprite);
 
@@ -259,6 +266,50 @@ Nest.prototype.spawnBeast = function() {
 Nest.prototype.destroy = function() {
   clearInterval(this.interval_id);
   Sprite.prototype.destroy.apply(this, arguments);
+};
+
+function Dynamite(x, y) {
+  this.x = x;
+  this.y = y;
+  this.fillStyle = "rgb(255,0,0)";
+  this.ticking = false;
+  this.movable = true;
+  this.arr = dynamites;
+}
+inherits(Dynamite, Sprite);
+Dynamite.prototype.move = function() {
+  // TODO: detect contact w/ another dynamite & set ticking to true
+  Sprite.prototype.move.apply(this, arguments);
+  var adj_dynamites = adjacent(this, dynamites);
+  if (!adj_dynamites.length)
+    return;
+  adj_dynamites.forEach(function(dyn) {
+    dyn.startTicking();
+  });
+  this.startTicking();
+};
+Dynamite.prototype.startTicking = function() {
+  if (this.ticking) return;
+  this.ticking = true;
+  this.tick_times = 0;
+  var interval_id = setInterval(function() {
+    this.tick_times++
+    if (this.tick_times < 4) {
+      this.fillStyle = "rgb(125,0,0)";
+      setTimeout(function() {
+        this.fillStyle = "rgb(255,0,0)";
+      }.bind(this), 100);
+    }
+    // SHE'S GONNA BLOW!!!
+    else {
+      clearInterval(interval_id);
+      adjacent(this, sprites).forEach(function(sprite) {
+        if (sprite.destroy)
+          sprite.destroy();
+      });
+      this.destroy();
+    }
+  }.bind(this), 1000);
 };
 
 var coords = [
@@ -318,6 +369,21 @@ function inherits(ctor, superCtor) {
 // pick random item from array
 function random(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// returns items from arr that are adjacent to coords
+function adjacent(coords, arr) {
+  var adj = [];
+  var len = arr.length;
+  for (var n = 0; n < len; n++) {
+    var sprite = arr[n];
+    var diff_x = sprite.x - coords.x;
+    var diff_y = sprite.y - coords.y;
+    if (diff_x >= -1 && diff_x <= 1 && diff_y >= -1 && diff_y <= 1)
+      if (diff_x != 0 || diff_y != 0)
+        adj.push(sprite);
+  }
+  return adj;
 }
 
 // setup sound effects
