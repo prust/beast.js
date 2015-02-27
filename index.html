@@ -4,14 +4,14 @@ document.body.style.overflow = 'hidden';
 var canvas = document.getElementById('tutorial');
 var ctx = canvas.getContext('2d');
 
-var blocks = [], beasts = [], player, sprites;
+var blocks = [], beasts = [], nests = [], player, sprites;
 var playing = true;
 var snd_effect_time = Date.now();
 
 function init() {
   player = new Player(18, 18);
   spawnBeastsBlocks();
-  sprites = blocks.concat(beasts);
+  sprites = blocks.concat(beasts, nests);
   sprites.push(player);
 
   requestAnimationFrame(draw);
@@ -72,10 +72,12 @@ function spawnBeastsBlocks() {
     for (var x = 0; x < 36; ++x) {
         for (var y = 0; y < 36; ++y) {
             if (x != player.x && y != player.y) {
-              if (Math.random() > 0.993)
-                  beasts.push(new Beast(x, y));
+              if (Math.random() > 0.998)
+                nests.push(new Nest(x, y));
+              else if (Math.random() > 0.993)
+                beasts.push(new Beast(x, y));
               else if (Math.random() > 0.70)
-                  blocks.push(new Block(x, y));
+                blocks.push(new Block(x, y));
           }
         }
     }
@@ -104,35 +106,37 @@ function collide(sprite, sprites) {
 function Sprite() {
 }
 Sprite.prototype.move = function(vect) {  
-    this.x += vect.x;
-    this.y += vect.y;
-    var collide_block = collide(this, blocks);
-    if (collide_block)
-        collide_block.move(vect);
-}
+  this.x += vect.x;
+  this.y += vect.y;
+  var collide_block = collide(this, blocks);
+  if (collide_block)
+      collide_block.move(vect);
+};
+Sprite.prototype.draw = function() {
+  ctx.fillStyle = this.fillStyle;
+  ctx.fillRect(this.x * 20, this.y * 20, 20, 20);
+};
+Sprite.prototype.destroy = function() {
+  var ix = this.arr.indexOf(this);
+  this.arr.splice(ix, 1);
+  ix = sprites.indexOf(this);
+  sprites.splice(ix, 1);
+};
 
 function Player(x, y) {
-    this.x = x;
-    this.y = y;
+  this.x = x;
+  this.y = y;
+  this.fillStyle = "rgb(100,100,255)";
 }
 inherits(Player, Sprite);
-Player.prototype.draw = function() {
-    drawPlayer(this.x, this.y);
-};
 
 function Beast(x, y) {
-    this.x = x;
-    this.y = y;
+  this.x = x;
+  this.y = y;
+  this.fillStyle = "rgb(0,0,0)";
+  this.arr = beasts;
 }
-Beast.prototype.draw = function() {
-    drawBeast(this.x, this.y);
-};
-Beast.prototype.kill = function() {
-    var ix = beasts.indexOf(this);
-    beasts.splice(ix, 1);
-    ix = sprites.indexOf(this);
-    sprites.splice(ix, 1);
-}
+inherits(Beast, Sprite);
 
 // move toward the player if possible but semi-randomly
 Beast.prototype.move = function(vect) {
@@ -147,6 +151,12 @@ Beast.prototype.move = function(vect) {
 
   var diff_x = this.x - player.x;
   var diff_y = this.y - player.y;
+
+  // Game Over:
+  // I'm not sure how, but sometimes a beast can be right on top of a player
+  // yet move() is still called...
+  if (!diff_x && !diff_y)
+    return playing = false;
 
   // figure out optimal direction for beast to move
   var dir = {x: 0, y: 0};
@@ -210,36 +220,46 @@ function clone(dir) {
 function Block(x, y) {
   this.x = x;
   this.y = y;
+  this.fillStyle = "rgb(200,200,200)";
 }
 inherits(Block, Sprite);
-Block.prototype.draw = function() {
-  drawBlock(this.x, this.y);
-};
 Block.prototype.move = function(vect) {
     Block.super_.prototype.move.call(this, vect);
     var collide_beast = collide(this, beasts);
     if (collide_beast) {
         if (collide(add(this, vect), blocks))
-            collide_beast.kill();
+            collide_beast.destroy();
         else
             collide_beast.move(vect);
     }
 }
 
-function drawBlock(x, y) {
-  ctx.fillStyle = "rgb(200,200,200)";
-  ctx.fillRect (x * 20, y * 20, 20, 20);
+function Nest(x, y) {
+  this.x = x;
+  this.y = y;
+  this.fillStyle = "rgb(115,115,115)";
+  this.interval_id = setInterval(this.spawnBeast.bind(this), 10 * 1000);
 }
+inherits(Nest, Sprite);
 
-function drawPlayer(x, y) {
-  ctx.fillStyle = "rgb(100,100,255)";
-  ctx.fillRect (x * 20, y * 20, 20, 20);
-}
+Nest.prototype.spawnBeast = function() {
+  if (!playing) return;
 
-function drawBeast(x, y) {
-  ctx.fillStyle = "rgb(0,0,0)";
-  ctx.fillRect (x * 20, y * 20, 20, 20);
-}
+  var avail_coords = coords.filter(function(vect) {
+    return !collide(add(this, vect), beasts);
+  });
+  if (!avail_coords)
+    return;
+  
+  var vect = add(this, random(avail_coords));
+  var beast = new Beast(vect.x, vect.y);
+  beasts.push(beast);
+  sprites.push(beast);
+};
+Nest.prototype.destroy = function() {
+  clearInterval(this.interval_id);
+  Sprite.prototype.destroy.apply(this, arguments);
+};
 
 var coords = [
   {x: 0, y: -1},
@@ -295,14 +315,10 @@ function inherits(ctor, superCtor) {
   });
 }
 
-// copied from underscore.js
-function random(min, max) {
-    if (max == null) {
-      max = min;
-      min = 0;
-    }
-    return min + Math.floor(Math.random() * (max - min + 1));
-  };
+// pick random item from array
+function random(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 // setup sound effects
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
