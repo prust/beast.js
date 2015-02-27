@@ -169,8 +169,10 @@ Beast.prototype.move = function(vect) {
   if (diff_y)
     dir.y = diff_y < 0 ? 1 : -1;
 
-  // blocks-n-beasts (avoid colliding w/ blocks or other beasts)
-  var bnb = blocks.concat(beasts);
+  // blocks-n-beasts (avoid colliding w/ blocks or beasts... or anything but the player)
+  var bnb = sprites.slice();
+  var player_ix = bnb.indexOf(player);
+  bnb.splice(player_ix, 1);
   
   var directions = [];
   if (!collide(add(this, dir), bnb))
