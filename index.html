@@ -10,10 +10,7 @@ var playing = true;
 var snd_effect_time = Date.now();
 
 function init() {
-  player = new Player(18, 18);
-  spawnBeastsBlocks();
-  sprites = sprites.concat(blocks, beasts, nests, dynamites);
-  sprites.push(player);
+  spawnWorld(4, 2, 4);
 
   requestAnimationFrame(draw);
   setInterval(function() {
@@ -46,7 +43,9 @@ document.addEventListener('keydown', function(evt) {
   if (!playing || !vectors[evt.keyCode])
     return;
 
-  player.move(vectors[evt.keyCode]);
+  var vect = vectors[evt.keyCode];
+  if (player.canMove(vect))
+    player.move(vect);
   keys[evt.keyCode] = 1;
   setTimeout(function() {
     if (keys[evt.keyCode])
@@ -64,26 +63,46 @@ document.addEventListener('keyup', function(evt) {
 setInterval(function() {
   if (!playing) return;
 
-  for (vect in vectors)
-    if (keys[vect] == 2)
-      player.move(vectors[vect]);
-}, 100);
-
-function spawnBeastsBlocks() {
-  for (var x = 0; x < 36; ++x) {
-    for (var y = 0; y < 36; ++y) {
-        if (x != player.x && y != player.y) {
-          if (Math.random() > 0.998)
-            nests.push(new Nest(x, y));
-          else if (Math.random() > 0.996)
-            dynamites.push(new Dynamite(x, y));
-          else if (Math.random() > 0.993)
-            beasts.push(new Beast(x, y));
-          else if (Math.random() > 0.70)
-            blocks.push(new Block(x, y));
-      }
+  for (vect in vectors) {
+    if (keys[vect] == 2) {
+      var vector = vectors[vect];
+      if (player.canMove(vector))
+        player.move(vector);
     }
   }
+}, 100);
+
+function spawnWorld(num_beasts, num_nests, num_dynamites) {
+  player = new Player({x: 18, y: 18});
+  sprites.push(player);
+
+  var max_x = 36;
+  var max_y = 36;
+  for (var n = 0; n < num_beasts; n++)
+    sprites.push(new Beast(getSpawnPosition()));
+  for (var n = 0; n < num_nests; n++)
+    sprites.push(new Nest(getSpawnPosition()));
+  for (var n = 0; n < num_dynamites; n++)
+    sprites.push(new Dynamite(getSpawnPosition()));
+  
+  function getSpawnPosition() {
+    var pos = {x: Math.floor(Math.random() * max_x), y: Math.floor(Math.random() * max_y)};
+    if (collide(pos, sprites))
+      pos = getSpawnPosition();
+    return pos;
+  }
+
+  sprites.forEach(function(sprite) {
+    sprite.arr.push(sprite);
+  });
+
+  for (var x = 0; x < 36; ++x) {
+    for (var y = 0; y < 36; ++y) {
+      if (Math.random() > 0.70 && !collide({x: x, y: y}, sprites))
+        blocks.push(new Block({x: x, y: y}));
+    }
+  }
+  sprites = sprites.concat(blocks);
 }
 
 function draw() {
@@ -108,6 +127,16 @@ function collide(sprite, sprites) {
 
 function Sprite() {
 }
+Sprite.prototype.canMove = function(vect) {
+  if (!this.movable)
+    return false;
+
+  var sprite = collide(add(this, vect), sprites);
+  if (sprite)
+    return sprite.canMove(vect);
+  else
+    return true;
+};
 Sprite.prototype.move = function(vect) {  
   this.x += vect.x;
   this.y += vect.y;
@@ -126,21 +155,29 @@ Sprite.prototype.destroy = function() {
   sprites.splice(ix, 1);
 };
 
-function Player(x, y) {
-  this.x = x;
-  this.y = y;
+function Player(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
   this.fillStyle = "rgb(100,100,255)";
   this.arr = [this];
+  this.movable = true;
 }
 inherits(Player, Sprite);
 
-function Beast(x, y) {
-  this.x = x;
-  this.y = y;
+function Beast(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
   this.fillStyle = "rgb(0,0,0)";
   this.arr = beasts;
 }
 inherits(Beast, Sprite);
+
+// a beast can only move in a certain direction
+// (or, more accurately, something else can only *push* the beast in this direction)
+// if the beast is against a block & will be squished
+Beast.prototype.canMove = function(vect) {
+  return collide(add(this, vect), blocks);
+};
 
 // move toward the player if possible but semi-randomly
 Beast.prototype.move = function(vect) {
@@ -223,9 +260,9 @@ function clone(dir) {
     return {x: dir.x, y: dir.y};
 }
 
-function Block(x, y) {
-  this.x = x;
-  this.y = y;
+function Block(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
   this.fillStyle = "rgb(200,200,200)";
   this.movable = true;
   this.arr = blocks;
@@ -233,6 +270,8 @@ function Block(x, y) {
 inherits(Block, Sprite);
 Block.prototype.move = function(vect) {
     Block.super_.prototype.move.call(this, vect);
+    
+    // detect beast-squishing
     var collide_beast = collide(this, beasts);
     if (collide_beast) {
         if (collide(add(this, vect), blocks))
@@ -242,11 +281,11 @@ Block.prototype.move = function(vect) {
     }
 }
 
-function Nest(x, y) {
-  this.x = x;
-  this.y = y;
+function Nest(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
   this.fillStyle = "rgb(115,115,115)";
-  this.interval_id = setInterval(this.spawnBeast.bind(this), 10 * 1000);
+  this.interval_id = setInterval(this.spawnBeast.bind(this), 20 * 1000);
   this.arr = nests;
 }
 inherits(Nest, Sprite);
@@ -261,7 +300,7 @@ Nest.prototype.spawnBeast = function() {
     return;
   
   var vect = add(this, random(avail_coords));
-  var beast = new Beast(vect.x, vect.y);
+  var beast = new Beast(vect);
   beasts.push(beast);
   sprites.push(beast);
 };
@@ -270,9 +309,9 @@ Nest.prototype.destroy = function() {
   Sprite.prototype.destroy.apply(this, arguments);
 };
 
-function Dynamite(x, y) {
-  this.x = x;
-  this.y = y;
+function Dynamite(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
   this.fillStyle = "rgb(255,0,0)";
   this.ticking = false;
   this.movable = true;

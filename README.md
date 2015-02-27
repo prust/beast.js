@@ -16,15 +16,21 @@ My Javascript remake:
 
 Use the arrow keys to move. You are the blue square, if the black "beasts" touch you, you die (you can tell because the game stops moving). Refresh the browser to start again. You can squish the Beasts between two bricks -- squish all the beasts and you win.
 
+* There are two **Beast Nests** (dark grey) that spawn beasts every 20 seconds
+* There are four **Dynamite blocks** (red) that explode when they come in contact with another dynamite block - this is the only way to destroy a Beast Nest
+
 ## Bug Reports
 
 If you see any bugs, please report them on the [issues page](https://github.com/prust/beast.js/issues).
 
-## Ideas
+## Known Issues
 
-* Add two Beast Nests (dark grey) that spawn beasts (they can spawn beasts on top of an adjacent block, destroying the block)
-* Add four Dynamite blocks (red) that explode when they come in contact with another dynamite block - the only way to destroy a Beast Nest
-* Possibly a super-beast that is the final product of a beast nest and can only be destroyed by dynamite. You want to destroy both nests before any of these are spawned because they move quick, push blocks around and are hard to kill.
+* I'm pretty sure that on rare occasions I've seen beasts move through solid block walls -- perhaps diagonally? I need to do some logging and/or a subsystem integrity check to nail this down
+* I think I've seen like beasts move on top of dynamite blocks or dynamite blocks being moved on top of beasts
+
+## Roadmap
+
+* Create a super-beast that is the final product of a beast nest and can only be destroyed by dynamite. You want to destroy both nests before any of these are spawned because they move quick, push blocks around and are hard to kill.
 
 ## Play!
 
