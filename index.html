@@ -16,13 +16,13 @@ function init() {
 
   requestAnimationFrame(draw);
   setInterval(function() {
-    if (!playing) return;
+    if (!playing || !beasts.length) return;
 
     gainNode.gain.value = 0.05;
     snd_effect_time = Date.now();
 
     beasts.forEach(function(beast) {
-        beast.move();
+      beast.move();
     });
   }, 500);
 }
