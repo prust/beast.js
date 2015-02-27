@@ -4,7 +4,7 @@ An ultra-simple clone of the 1984 [Beast](http://theodor.lauppert.ws/games/beast
 
 ## Screenshots
 
-The original [1984 DOS game](http://theodor.lauppert.ws/games/beast.htm) (may have been written in Assembler, the 4 guys who wrote it worked on WordPerfect at BYU and worked in Assembler -- there wasn't yet a reliable C compiler for the IBM PC at that time):
+The original [1984 DOS game](http://theodor.lauppert.ws/games/beast.htm) (may have been written in Assembler, the 4 guys who wrote it worked on WordPerfect at BYU and worked in Assembler):
 
 ![Screenshot of original DOS game](http://theodor.lauppert.ws/games/s/screen1/ascii/beast.png)
 
@@ -20,12 +20,11 @@ Use the arrow keys to move. You are the blue square, if the black "beasts" touch
 
 If you see any bugs, please report them on the [issues page](https://github.com/prust/beast.js/issues).
 
-## Roadmap
+## Ideas
 
-* Add two Beast Nests that spawn beasts (dark grey, 2x2)
+* Add two Beast Nests (dark grey) that spawn beasts (they can spawn beasts on top of an adjacent block, destroying the block)
 * Add four Dynamite blocks (red) that explode when they come in contact with another dynamite block - the only way to destroy a Beast Nest
-
-Other ideas: Possibly a super-beast that is the final product of a beast nest and can only be destroyed by dynamite. You want to destroy both nests before any of these are spawned because they move quick, push blocks around and are hard to kill.
+* Possibly a super-beast that is the final product of a beast nest and can only be destroyed by dynamite. You want to destroy both nests before any of these are spawned because they move quick, push blocks around and are hard to kill.
 
 ## Play!
 
