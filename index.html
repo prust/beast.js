@@ -28,20 +28,31 @@ var RIGHT = 39;
 var UP = 40;
 var DOWN = 38;
 var SPACE = 32;
+var keys = {};
+
+document.addEventListener('keydown', function(evt) {
+  keys[evt.keyCode] = true;
+});
+
 document.addEventListener('keyup', function(evt) {
     if (evt.keyCode == SPACE)
         playing = !playing;
+
+    keys[evt.keyCode] = false;
+});
+
+setInterval(function() {
     if (!playing) return;
 
-    if (evt.keyCode == LEFT)
+    if (keys[LEFT])
         player.move(-1, 0);
-    else if (evt.keyCode == RIGHT)
+    else if (keys[RIGHT])
         player.move(1, 0);
-    else if (evt.keyCode == UP)
+    else if (keys[UP])
         player.move(0, 1);
-    else if (evt.keyCode == DOWN)
+    else if (keys[DOWN])
         player.move(0, -1);
-});
+}, 100);
 
 function spawnBeastsBlocks() {
     for (var x = 0; x < 36; ++x) {
