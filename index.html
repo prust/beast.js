@@ -1,16 +1,25 @@
-<canvas id="tutorial" width="1800" height="1800"></canvas>
+<!doctype html>
+<html>
+<head></head>
+<body bgcolor="#85C15B" style="padding: 0; margin: 0">
+<canvas id="tutorial"></canvas>
 <script>
 document.body.style.overflow = 'hidden';
 var canvas = document.getElementById('tutorial');
+var viewport = new Viewport(window.innerWidth || document.body.clientWidth, window.innerHeight|| document.body.clientHeight);
+canvas.setAttribute('width', viewport.width);
+canvas.setAttribute('height', viewport.height);
 var ctx = canvas.getContext('2d');
 
 var blocks = [], beasts = [], nests = [], dynamites = [], sprites = [];
 var player;
 var playing = true;
+var is_debug = true;
 var snd_effect_time = Date.now();
+var block_size = 40;
 
 function init() {
-  spawnWorld(4, 2, 4);
+  spawnWorld(4, 1, 4);
 
   requestAnimationFrame(draw);
   setInterval(function() {
@@ -76,8 +85,8 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
   player = new Player({x: 18, y: 18});
   sprites.push(player);
 
-  var max_x = 36;
-  var max_y = 36;
+  var max_x = 40;
+  var max_y = 27;
   for (var n = 0; n < num_beasts; n++)
     sprites.push(new Beast(getSpawnPosition()));
   for (var n = 0; n < num_nests; n++)
@@ -96,9 +105,9 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
     sprite.arr.push(sprite);
   });
 
-  for (var x = 0; x < 36; ++x) {
-    for (var y = 0; y < 36; ++y) {
-      if (Math.random() > 0.70 && !collide({x: x, y: y}, sprites))
+  for (var x = 0; x < 40; ++x) {
+    for (var y = 0; y < 27; ++y) {
+      if (Math.random() > 0.85 && !collide({x: x, y: y}, sprites))
         blocks.push(new Block({x: x, y: y}));
     }
   }
@@ -106,7 +115,7 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
 }
 
 function draw() {
-    ctx.clearRect(0,0,1800,1800); // clear canvas
+    ctx.clearRect(0, 0, viewport.width, viewport.height);
 
     // only play sound effects for 50ms
     if (gainNode.gain.value && Date.now() - snd_effect_time > 50)
@@ -125,7 +134,37 @@ function collide(sprite, sprites) {
             return sprites[n];
 }
 
-function Sprite() {
+function Viewport(width, height) {
+  this.x = 0;
+  this.y = 0;
+  this.width = width;
+  this.height = height;
+}
+Viewport.prototype.follow = function(pos) {
+  var perct_x = (pos.x - this.x) * block_size / this.width;
+  var perct_y = (pos.y - this.y) * block_size / this.height;
+  if (perct_x > .8) {
+    var dest_x = Math.round(this.width * .7 / block_size);
+    this.x = pos.x - dest_x;
+  }
+  else if (perct_x < .2) {
+    var dest_x = Math.round(this.width * .3 / block_size);
+    this.x = pos.x - dest_x; 
+  }
+  if (perct_y > .8) {
+    var dest_y = Math.round(this.height * .7 / block_size);
+    this.y = pos.y - dest_y;
+  }
+  else if (perct_y < .2) {
+    var dest_y = Math.round(this.height * .3 / block_size);
+    this.y = pos.y - dest_y;
+  }
+};
+
+function Sprite(pos) {
+  this.x = pos.x;
+  this.y = pos.y;
+  this.is_destroyed = false;
 }
 Sprite.prototype.canMove = function(vect) {
   if (!this.movable)
@@ -146,27 +185,38 @@ Sprite.prototype.move = function(vect) {
 };
 Sprite.prototype.draw = function() {
   ctx.fillStyle = this.fillStyle;
-  ctx.fillRect(this.x * 20, this.y * 20, 20, 20);
+  ctx.fillRect(this.x * block_size - viewport.x * block_size, this.y * block_size - viewport.y * block_size, block_size, block_size);
 };
 Sprite.prototype.destroy = function() {
+  if (this.is_destroyed) return;
+  this.is_destroyed = true;
   var ix = this.arr.indexOf(this);
-  this.arr.splice(ix, 1);
+  if (ix > -1)
+    this.arr.splice(ix, 1);
+  else
+    warning('this not found in this.arr');
+  
   ix = sprites.indexOf(this);
-  sprites.splice(ix, 1);
+  if (ix > -1)
+    sprites.splice(ix, 1);
+  else
+    warning('this not found in sprites');
 };
 
 function Player(pos) {
-  this.x = pos.x;
-  this.y = pos.y;
-  this.fillStyle = "rgb(100,100,255)";
+  Player.super_.call(this, pos);
+  this.fillStyle = "#3333CC";
   this.arr = [this];
   this.movable = true;
 }
 inherits(Player, Sprite);
+Player.prototype.move = function(vect) {
+  Player.super_.prototype.move.apply(this, arguments);
+  viewport.follow(this);
+};
 
 function Beast(pos) {
-  this.x = pos.x;
-  this.y = pos.y;
+  Beast.super_.call(this, pos);
   this.fillStyle = "rgb(0,0,0)";
   this.arr = beasts;
 }
@@ -261,9 +311,8 @@ function clone(dir) {
 }
 
 function Block(pos) {
-  this.x = pos.x;
-  this.y = pos.y;
-  this.fillStyle = "rgb(200,200,200)";
+  Block.super_.call(this, pos);
+  this.fillStyle = "#888888";
   this.movable = true;
   this.arr = blocks;
 }
@@ -282,10 +331,9 @@ Block.prototype.move = function(vect) {
 }
 
 function Nest(pos) {
-  this.x = pos.x;
-  this.y = pos.y;
-  this.fillStyle = "rgb(115,115,115)";
-  this.interval_id = setInterval(this.spawnBeast.bind(this), 20 * 1000);
+  Nest.super_.call(this, pos);
+  this.fillStyle = "#FFFFFF";
+  this.interval_id = setInterval(this.spawnBeast.bind(this), 30 * 1000);
   this.arr = nests;
 }
 inherits(Nest, Sprite);
@@ -305,14 +353,14 @@ Nest.prototype.spawnBeast = function() {
   sprites.push(beast);
 };
 Nest.prototype.destroy = function() {
+  if (this.is_destroyed) return;
   clearInterval(this.interval_id);
   Sprite.prototype.destroy.apply(this, arguments);
 };
 
 function Dynamite(pos) {
-  this.x = pos.x;
-  this.y = pos.y;
-  this.fillStyle = "rgb(255,0,0)";
+  Dynamite.super_.call(this, pos);
+  this.fillStyle = "#BB0000";
   this.ticking = false;
   this.movable = true;
   this.arr = dynamites;
@@ -345,8 +393,10 @@ Dynamite.prototype.startTicking = function() {
     else {
       clearInterval(interval_id);
       adjacent(this, sprites).forEach(function(sprite) {
-        if (sprite.destroy)
+        if (sprite.destroy) {
+          log('dynamite is destroying sprite');
           sprite.destroy();
+        }
       });
       this.destroy();
     }
@@ -427,6 +477,11 @@ function adjacent(coords, arr) {
   return adj;
 }
 
+function log(msg) {
+  if (is_debug)
+    console.log(msg);
+}
+
 // setup sound effects
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 var oscillator = audioCtx.createOscillator();
@@ -440,3 +495,5 @@ gainNode.connect(audioCtx.destination);
 
 init();
 </script>
+</body>
+</html>
