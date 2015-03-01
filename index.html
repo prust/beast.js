@@ -239,6 +239,10 @@ Player.prototype.move = function(vect) {
   Player.super_.prototype.move.apply(this, arguments);
   viewport.follow(this);
 };
+Player.prototype.destroy = function() {
+  Player.super_.prototype.destroy.apply(this, arguments);
+  playing = false;
+};
 
 function Beast(pos) {
   Beast.super_.call(this, pos);
@@ -271,7 +275,7 @@ Beast.prototype.move = function(vect) {
   // I'm not sure how, but sometimes a beast can be right on top of a player
   // yet move() is still called...
   if (!diff.x && !diff.y)
-    return playing = false;
+    return player.destroy();
 
   // figure out optimal direction for beast to move
   if (peaceful_beasts) {
@@ -332,7 +336,7 @@ Beast.prototype.move = function(vect) {
 
   // game over!
   if (this.x == player.x && this.y == player.y)
-    playing = false;
+    player.destroy();
 }
 
 function add(sprite1, sprite2) {
