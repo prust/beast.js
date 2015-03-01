@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head></head>
-<body bgcolor="#85C15B" style="padding: 0; margin: 0">
+<body bgcolor="#0000FF" style="padding: 0; margin: 0">
 <canvas id="tutorial"></canvas>
 <script>
 document.body.style.overflow = 'hidden';
@@ -17,6 +17,7 @@ var playing = true;
 var is_debug = true;
 var snd_effect_time = Date.now();
 var block_size = 40;
+var peaceful_beasts = false; // makes beasts move randomly instead of toward you
 
 function init() {
   spawnWorld(4, 1, 4);
@@ -31,7 +32,7 @@ function init() {
     beasts.forEach(function(beast) {
       beast.move();
     });
-  }, 500);
+  }, 1000);
 }
 
 var LEFT = 37;
@@ -47,6 +48,19 @@ vectors[UP] = {x: 0, y: 1};
 vectors[DOWN] = {x: 0, y: -1};
 
 var keys = {};
+var bg_colors = ['#85C15B', '#CCCCCC', '#FFCC66', '#006600'];
+var regions = [
+  {x: -1, y: -1, color: random(bg_colors)},
+  {x: 0, y: -1, color: random(bg_colors)},
+  {x: 1, y: -1, color: random(bg_colors)},
+  {x: -1, y: 0, color: random(bg_colors)},
+  {x: 0, y: 0, color: random(bg_colors)},
+  {x: 1, y: 0, color: random(bg_colors)},
+  {x: -1, y: 1, color: random(bg_colors)},
+  {x: 0, y: 1, color: random(bg_colors)},
+  {x: 1, y: 1, color: random(bg_colors)}
+];
+var region_size = 40;
 
 document.addEventListener('keydown', function(evt) {
   if (!playing || !vectors[evt.keyCode])
@@ -85,17 +99,24 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
   player = new Player({x: 18, y: 18});
   sprites.push(player);
 
-  var max_x = 40;
-  var max_y = 27;
+  var max_x = region_size;
+  var max_y = region_size;
   for (var n = 0; n < num_beasts; n++)
-    sprites.push(new Beast(getSpawnPosition()));
-  for (var n = 0; n < num_nests; n++)
-    sprites.push(new Nest(getSpawnPosition()));
-  for (var n = 0; n < num_dynamites; n++)
-    sprites.push(new Dynamite(getSpawnPosition()));
+    sprites.push(new Beast(getSpawnPosition(0, 0)));
+
+  for (var x = -1; x <= 1; x++) {
+    for (var y = -1; y <= 1; y++) {
+      for (var n = 0; n < num_nests; n++)
+        sprites.push(new Nest(getSpawnPosition(x, y)));
+      for (var n = 0; n < num_dynamites; n++)
+        sprites.push(new Dynamite(getSpawnPosition(x, y)));
+    }
+  }
   
-  function getSpawnPosition() {
+  function getSpawnPosition(region_x, region_y) {
     var pos = {x: Math.floor(Math.random() * max_x), y: Math.floor(Math.random() * max_y)};
+    pos.x += region_x * region_size;
+    pos.y += region_y * region_size;
     if (collide(pos, sprites))
       pos = getSpawnPosition();
     return pos;
@@ -105,8 +126,8 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
     sprite.arr.push(sprite);
   });
 
-  for (var x = 0; x < 40; ++x) {
-    for (var y = 0; y < 27; ++y) {
+  for (var x = 0; x < region_size; ++x) {
+    for (var y = 0; y < region_size; ++y) {
       if (Math.random() > 0.85 && !collide({x: x, y: y}, sprites))
         blocks.push(new Block({x: x, y: y}));
     }
@@ -116,6 +137,10 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
 
 function draw() {
     ctx.clearRect(0, 0, viewport.width, viewport.height);
+    regions.forEach(function(bg) {
+      ctx.fillStyle = bg.color;
+      ctx.fillRect(bg.x * region_size * block_size - viewport.x * block_size, bg.y * region_size * block_size - viewport.y * block_size, region_size * block_size, region_size * block_size);
+    });
 
     // only play sound effects for 50ms
     if (gainNode.gain.value && Date.now() - snd_effect_time > 50)
@@ -144,19 +169,19 @@ Viewport.prototype.follow = function(pos) {
   var perct_x = (pos.x - this.x) * block_size / this.width;
   var perct_y = (pos.y - this.y) * block_size / this.height;
   if (perct_x > .8) {
-    var dest_x = Math.round(this.width * .7 / block_size);
+    var dest_x = Math.round(this.width * .75 / block_size);
     this.x = pos.x - dest_x;
   }
   else if (perct_x < .2) {
-    var dest_x = Math.round(this.width * .3 / block_size);
+    var dest_x = Math.round(this.width * .25 / block_size);
     this.x = pos.x - dest_x; 
   }
   if (perct_y > .8) {
-    var dest_y = Math.round(this.height * .7 / block_size);
+    var dest_y = Math.round(this.height * .75 / block_size);
     this.y = pos.y - dest_y;
   }
   else if (perct_y < .2) {
-    var dest_y = Math.round(this.height * .3 / block_size);
+    var dest_y = Math.round(this.height * .25 / block_size);
     this.y = pos.y - dest_y;
   }
 };
@@ -240,22 +265,29 @@ Beast.prototype.move = function(vect) {
     return;
   }
 
-  var diff_x = this.x - player.x;
-  var diff_y = this.y - player.y;
+  var diff = difference(this, player);
 
   // Game Over:
   // I'm not sure how, but sometimes a beast can be right on top of a player
   // yet move() is still called...
-  if (!diff_x && !diff_y)
+  if (!diff.x && !diff.y)
     return playing = false;
 
   // figure out optimal direction for beast to move
-  var dir = {x: 0, y: 0};
-  if (diff_x)
-    dir.x = diff_x < 0 ? 1 : -1;
-  if (diff_y)
-    dir.y = diff_y < 0 ? 1 : -1;
-
+  if (peaceful_beasts) {
+    var dir = {
+      x: random([-1, 0, 1]),
+      y: random([-1, 0, 1])
+    };
+  }
+  else {
+    var dir = {x: 0, y: 0};
+    if (diff.x)
+      dir.x = diff.x < 0 ? 1 : -1;
+    if (diff.y)
+      dir.y = diff.y < 0 ? 1 : -1;
+  }
+  
   // blocks-n-beasts (avoid colliding w/ blocks or beasts... or anything but the player)
   var bnb = sprites.slice();
   var player_ix = bnb.indexOf(player);
@@ -315,11 +347,57 @@ function Block(pos) {
   this.fillStyle = "#888888";
   this.movable = true;
   this.arr = blocks;
+  this.is_turret = false;
 }
 inherits(Block, Sprite);
+Block.prototype.makeTurret = function() {
+  if (this.is_turret) return;
+  this.is_turret = true;
+  this.fillStyle = "#666666";
+  
+  // a cleaner way to do this would be to have a single object
+  // that represents the group of bricks and a way to get the blocks that are adjacent to that
+  // instead, we share a last_destroy variable w/ the others to ensure no two adjacent turret blocks
+  // destroy something within the space of 5 seconds
+  var destroy_interval = 5 * 1000;
+  setInterval(function() {
+    if (Date.now() - this.last_destroy < destroy_interval)
+      return;
+
+    var adj = adjacent(this, beasts);
+    if (adj.length) {
+      random(adj).destroy();
+      this.last_destroy = Date.now();
+      adjacent(this, blocks).forEach(function(block) {
+        block.last_destroy = Date.now();
+      });
+    }
+  }.bind(this), destroy_interval);
+};
+
 Block.prototype.move = function(vect) {
     Block.super_.prototype.move.call(this, vect);
     
+    // detect turret
+    var adj_blocks = adjacent(this, blocks);
+    if (adj_blocks.length == 3) {
+      // if all 3 adjacent blocks are in the same corner
+      var diff_blocks = adj_blocks.map(function(block) { return difference(this, block); }.bind(this));
+      if (Math.abs(diff_blocks[0].x + diff_blocks[1].x + diff_blocks[2].x) == 2 &&
+        Math.abs(diff_blocks[0].y + diff_blocks[1].y + diff_blocks[2].y) == 2) {
+
+        // if none of them are touching any other blocks
+        if (adjacent(adj_blocks[0], blocks).length == 3 &&
+          adjacent(adj_blocks[1], blocks).length == 3 &&
+          adjacent(adj_blocks[2], blocks).length == 3) {
+            this.makeTurret();
+            adj_blocks.forEach(function(block) {
+              block.makeTurret();
+            });
+        }
+      }
+    }
+
     // detect beast-squishing
     var collide_beast = collide(this, beasts);
     if (collide_beast) {
@@ -333,7 +411,7 @@ Block.prototype.move = function(vect) {
 function Nest(pos) {
   Nest.super_.call(this, pos);
   this.fillStyle = "#FFFFFF";
-  this.interval_id = setInterval(this.spawnBeast.bind(this), 30 * 1000);
+  this.interval_id = setInterval(this.spawnBeast.bind(this), random([30, 45, 60, 75, 90]) * 1000);
   this.arr = nests;
 }
 inherits(Nest, Sprite);
@@ -392,7 +470,8 @@ Dynamite.prototype.startTicking = function() {
     // SHE'S GONNA BLOW!!!
     else {
       clearInterval(interval_id);
-      adjacent(this, sprites).forEach(function(sprite) {
+      var explosion_size = random([1, 2, 3]);
+      adjacent(this, sprites, explosion_size).forEach(function(sprite) {
         if (sprite.destroy) {
           log('dynamite is destroying sprite');
           sprite.destroy();
@@ -463,18 +542,24 @@ function random(arr) {
 }
 
 // returns items from arr that are adjacent to coords
-function adjacent(coords, arr) {
+function adjacent(coords, arr, dist) {
+  if (!dist)
+    dist = 1;
+  
   var adj = [];
   var len = arr.length;
   for (var n = 0; n < len; n++) {
     var sprite = arr[n];
-    var diff_x = sprite.x - coords.x;
-    var diff_y = sprite.y - coords.y;
-    if (diff_x >= -1 && diff_x <= 1 && diff_y >= -1 && diff_y <= 1)
-      if (diff_x != 0 || diff_y != 0)
+    var diff = difference(sprite, coords);
+    if (diff.x >= -dist && diff.x <= dist && diff.y >= -dist && diff.y <= dist)
+      if (diff.x != 0 || diff.y != 0)
         adj.push(sprite);
   }
   return adj;
+}
+
+function difference(sprite1, sprite2) {
+  return {x: sprite1.x - sprite2.x, y: sprite1.y - sprite2.y};
 }
 
 function log(msg) {
