@@ -128,10 +128,7 @@ document.addEventListener('keydown', function(evt) {
     return;
 
   var vect = vectors[evt.keyCode];
-  console.log('about to emit move: ' + Date.now());
   emit('move', vect);
-  // if (player.canMove(vect))
-  //   player.move(vect);
   keys[evt.keyCode] = 1;
   setTimeout(function() {
     if (keys[evt.keyCode])
@@ -142,8 +139,7 @@ document.addEventListener('keydown', function(evt) {
 document.addEventListener('keyup', function(evt) {
   if (evt.keyCode == SPACE)
     emit('pause');
-  //     playing = !playing;
-
+  
   keys[evt.keyCode] = 0;
 });
 
@@ -153,10 +149,7 @@ setInterval(function() {
   for (vect in vectors) {
     if (keys[vect] == 2) {
       var vector = vectors[vect];
-      console.log('emitting move in setInterval: ' + Date.now());
       emit('move', vector);
-      // if (player.canMove(vector))
-      //   player.move(vector);
     }
   }
 }, 100);
