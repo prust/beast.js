@@ -3,6 +3,7 @@
 <head></head>
 <body bgcolor="#0000FF" style="padding: 0; margin: 0">
 <canvas id="tutorial"></canvas>
+<script src="/socket.io/socket.io.js"></script>
 <script>
 document.body.style.overflow = 'hidden';
 var canvas = document.getElementById('tutorial');
@@ -11,8 +12,6 @@ canvas.setAttribute('width', viewport.width);
 canvas.setAttribute('height', viewport.height);
 var ctx = canvas.getContext('2d');
 
-var seed = Date.now();
-
 var blocks = [], beasts = [], nests = [], dynamites = [], sprites = [];
 var player;
 var playing = true;
@@ -20,9 +19,68 @@ var is_debug = true;
 var snd_effect_time = Date.now();
 var block_size = 40;
 var peaceful_beasts = false; // makes beasts move randomly instead of toward you
+var server_time = 0;
 
-function init() {
-  window.m = new MersenneTwister(seed);
+var offline = !window.io;
+
+if (offline) {
+  window.emit = function(name, data) {
+    handleEvent({name: name, data: data});
+  };
+  setTimeout(function() {
+    init({seed: seed});
+  }, 0);
+  window.interval = setInterval;
+  window.clearInt = clearInterval;
+}
+else {
+  var socket = io(location.origin, {multiplex: false});
+  socket.on('evt', handleEvent);
+  socket.on('spawnWorld', init);
+  socket.on('playEvents', function(events) {
+    events.forEach(function(evt) {
+      handleEvent(evt);
+    });
+  });
+
+  window.emit = function(name, data) {
+    socket.emit('evt', {name: name, data: data});
+  };
+  window.interval = function(cb, ms) {
+    var secs = ms / 1000;
+    data = {start: server_time, secs: secs, id: Math.random(), cb: cb};
+    interval.fns.push(data);
+    return data.id;
+  };
+  window.clearInt = function(id) {
+    for (var n = 0; n < interval.fns.length; n++) {
+      if (interval.fns[n].id == id)
+        interval.fns.splice(n, 1);
+    }
+  };
+  interval.fns = [];
+}
+
+function handleEvent(evt) {
+  if (evt.name == 'move') {
+    if (player.canMove(evt.data))
+      player.move(evt.data);
+  }
+  else if (evt.name == 'pause') {
+    playing = !playing;
+  }
+  else if (evt.name == 'time') {
+    server_time = evt.time;
+    interval.fns.forEach(function(data) {
+      var diff = server_time - data.start;
+      if (diff % data.secs == 0)
+        data.cb();
+    });
+  }
+}
+
+function init(opts) {
+  window.m = new MersenneTwister(opts.seed);
   window.regions = [
     {x: -1, y: -1, color: random(bg_colors)},
     {x: 0, y: -1, color: random(bg_colors)},
@@ -37,7 +95,7 @@ function init() {
   spawnWorld(4, 1, 4);
 
   requestAnimationFrame(draw);
-  setInterval(function() {
+  interval(function() {
     if (!playing || !beasts.length) return;
 
     gainNode.gain.value = 0.05;
@@ -70,8 +128,10 @@ document.addEventListener('keydown', function(evt) {
     return;
 
   var vect = vectors[evt.keyCode];
-  if (player.canMove(vect))
-    player.move(vect);
+  console.log('about to emit move: ' + Date.now());
+  emit('move', vect);
+  // if (player.canMove(vect))
+  //   player.move(vect);
   keys[evt.keyCode] = 1;
   setTimeout(function() {
     if (keys[evt.keyCode])
@@ -81,7 +141,8 @@ document.addEventListener('keydown', function(evt) {
 
 document.addEventListener('keyup', function(evt) {
   if (evt.keyCode == SPACE)
-      playing = !playing;
+    emit('pause');
+  //     playing = !playing;
 
   keys[evt.keyCode] = 0;
 });
@@ -92,8 +153,10 @@ setInterval(function() {
   for (vect in vectors) {
     if (keys[vect] == 2) {
       var vector = vectors[vect];
-      if (player.canMove(vector))
-        player.move(vector);
+      console.log('emitting move in setInterval: ' + Date.now());
+      emit('move', vector);
+      // if (player.canMove(vector))
+      //   player.move(vector);
     }
   }
 }, 100);
@@ -367,7 +430,7 @@ Block.prototype.makeTurret = function() {
   // instead, we share a last_destroy variable w/ the others to ensure no two adjacent turret blocks
   // destroy something within the space of 5 seconds
   var destroy_interval = 5 * 1000;
-  setInterval(function() {
+  interval(function() {
     if (Date.now() - this.last_destroy < destroy_interval)
       return;
 
@@ -418,7 +481,7 @@ Block.prototype.move = function(vect) {
 function Nest(pos) {
   Nest.super_.call(this, pos);
   this.fillStyle = "#FFFFFF";
-  this.interval_id = setInterval(this.spawnBeast.bind(this), random([30, 45, 60, 75, 90]) * 1000);
+  this.interval_id = interval(this.spawnBeast.bind(this), random([30, 45, 60, 75, 90]) * 1000);
   this.arr = nests;
 }
 inherits(Nest, Sprite);
@@ -439,7 +502,7 @@ Nest.prototype.spawnBeast = function() {
 };
 Nest.prototype.destroy = function() {
   if (this.is_destroyed) return;
-  clearInterval(this.interval_id);
+  clearInt(this.interval_id);
   Sprite.prototype.destroy.apply(this, arguments);
 };
 
@@ -466,7 +529,7 @@ Dynamite.prototype.startTicking = function() {
   if (this.ticking) return;
   this.ticking = true;
   this.tick_times = 0;
-  var interval_id = setInterval(function() {
+  var interval_id = interval(function() {
     this.tick_times++
     if (this.tick_times < 4) {
       this.fillStyle = "rgb(125,0,0)";
@@ -476,7 +539,7 @@ Dynamite.prototype.startTicking = function() {
     }
     // SHE'S GONNA BLOW!!!
     else {
-      clearInterval(interval_id);
+      clearInt(interval_id);
       var explosion_size = random([1, 2, 3]);
       adjacent(this, sprites, explosion_size).forEach(function(sprite) {
         if (sprite.destroy) {
@@ -692,7 +755,6 @@ MersenneTwister.prototype.random = function() {
   /* divided by 2^32 */
 }
 
-init();
 </script>
 </body>
 </html>
