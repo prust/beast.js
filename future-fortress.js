@@ -13,11 +13,12 @@ canvas.addEventListener('mousedown', function(evt) {
   var sprite = collide(pos, sprites);
   if (sprite) {
     mode = 'destroy';
-    destroy(sprite);
+    emit('destroy', {pos: pos, player_id: this_player_id});
   }
   else if (avail_blocks) {
     mode = 'place';
-    place(pos, is_turret);
+    if (!is_turret || avail_blocks >= 8)
+      emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
   }
 });
 
@@ -26,9 +27,10 @@ canvas.addEventListener('mousemove', function(evt) {
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
   if (mode == 'destroy' && sprite)
-    destroy(sprite);
+    emit('destroy', {pos: pos});
   else if (mode == 'place' && !sprite)
-    place(pos, is_turret);
+    if (!is_turret || avail_blocks >= 8)
+      emit('place', {pos: pos, is_turret: is_turret});
 });
 
 canvas.addEventListener('mouseup', function(evt) {
@@ -50,24 +52,28 @@ function posFromEvt(evt) {
   return toBlockCoords(click_pos);
 }
 
-function destroy(sprite) {
-  sprite.destroy();
-  avail_blocks += 2;
-}
-
-function place(pos, is_turret) {
-  if (is_turret && avail_blocks < 8)
+function destroy(opts) {
+  var sprite = collide(opts.pos, sprites);
+  if (!sprite)
     return;
 
-  placeBlock(pos, is_turret);
+  sprite.destroy();
+  if (opts.player_id == this_player_id)
+    avail_blocks += 2;
+}
 
-  if (is_turret) {
+function place(opts) {
+  var pos = opts.pos;
+  placeBlock(pos, opts.is_turret);
+
+  if (opts.is_turret) {
     placeBlock({x: pos.x, y: pos.y + 1}, true);
     placeBlock({x: pos.x + 1, y: pos.y}, true);
     placeBlock({x: pos.x + 1, y: pos.y + 1}, true);
-    avail_blocks -= 8;
+    if (opts.player_id == this_player_id)
+      avail_blocks -= 8;
   }
-  else {
+  else if (opts.player_id == this_player_id) {
     avail_blocks--;
   }
 }
@@ -173,6 +179,12 @@ function handleEvent(evt) {
       this_player = player;
     players.push(player);
     sprites.push(player);
+  }
+  else if (evt.name == 'place') {
+    place(evt.data);
+  }
+  else if (evt.name == 'destroy') {
+    destroy(evt.data);
   }
 }
 
