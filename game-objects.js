@@ -138,20 +138,20 @@ Beast.prototype.move = function(vect) {
   if (!collide(add(this, clock), bnb))
     directions.push(clock);
 
-  var dir;
+  var chosen_dir;
   for (var n = 0; n < directions.length; n++) {
     if (n == directions.length - 1) {
-      dir = directions[n];
+      chosen_dir = directions[n];
     }
     else if (m.random() < 0.7) {
-      dir = directions[n];
+      chosen_dir = directions[n];
       break;
     }
   }
 
-    if (dir) {
-      this.x += dir.x;
-      this.y += dir.y;
+    if (chosen_dir) {
+      this.x += chosen_dir.x;
+      this.y += chosen_dir.y;
     }
 
   // game over!
