@@ -41,6 +41,8 @@ document.addEventListener('keypress', function(evt) {
     is_turret = !is_turret;
   if (ch == 'p')
     peaceful_beasts = !peaceful_beasts;
+  if (ch == 'r')
+    emit('report');
 });
 
 function posFromEvt(evt) {
@@ -93,23 +95,17 @@ var server_time = 0;
 var this_player_id = Math.random();
 var this_player = null;
 
+var playback = true;
 var offline = !window.io;
 
-if (offline) {
+if (offline || playback) {
   window.emit = function(name, data) {
     handleEvent({name: name, data: data});
   };
-  setTimeout(function() {
-    init({seed: Date.now()});
-    joinGame();
-  }, 0);
-  window.interval = setInterval;
-  window.clearInt = clearInterval;
 }
 else {
   var socket = io(location.origin, {multiplex: false});
   socket.on('evt', handleEvent);
-  socket.on('spawnWorld', init);
   socket.on('playEvents', function(events) {
     events.forEach(function(evt) {
       handleEvent(evt);
@@ -120,6 +116,17 @@ else {
   window.emit = function(name, data) {
     socket.emit('evt', {name: name, data: data});
   };
+}
+
+if (offline) {
+  setTimeout(function() {
+    init({seed: Date.now()});
+    joinGame();
+  }, 0);
+  window.interval = setInterval;
+  window.clearInt = clearInterval;
+}
+else {
   window.interval = function(cb, ms) {
     var secs = ms / 1000;
     data = {start: server_time, secs: secs, id: Math.random(), cb: cb};
@@ -141,7 +148,10 @@ function joinGame() {
 
 function handleEvent(evt) {
   var player;
-  if (evt.name == 'move') {
+  if (evt.name == 'spawnWorld') {
+    init(evt.data);
+  }
+  else if (evt.name == 'move') {
     player = players.filter(function(pl) { return pl.id == evt.data.player_id; })[0];
     if (player.canMove(evt.data))
       player.move(evt.data);
@@ -150,7 +160,7 @@ function handleEvent(evt) {
     playing = !playing;
   }
   else if (evt.name == 'time') {
-    server_time = evt.time;
+    server_time = evt.data.time;
     interval.fns.forEach(function(data) {
       var diff = server_time - data.start;
       if (diff % data.secs == 0)
@@ -210,38 +220,58 @@ var keys = {};
 var bg_colors = ['#85C15B', '#CCCCCC', '#FFCC66', '#006600'];
 var region_size = 40;
 
-document.addEventListener('keydown', function(evt) {
-  if (!playing || !vectors[evt.keyCode])
-    return;
-
-  var vect = vectors[evt.keyCode];
-  vect.player_id = this_player_id;
-  emit('move', vect);
-  keys[evt.keyCode] = 1;
-  setTimeout(function() {
-    if (keys[evt.keyCode])
-      keys[evt.keyCode] = 2;
-  }, 500);
-});
-
-document.addEventListener('keyup', function(evt) {
-  if (evt.keyCode == SPACE)
-    emit('pause');
+if (playback) {
+  var events;
+  ajax('report1', function(err, responseText) {
+    events = responseText.split('\n');
+    events = events.map(function(evt) {
+      return JSON.parse(evt);
+    });
+  });
   
-  keys[evt.keyCode] = 0;
-});
-
-setInterval(function() {
-  if (!playing) return;
-
-  for (vect in vectors) {
-    if (keys[vect] == 2) {
-      var vector = vectors[vect];
-      vector.player_id = this_player_id;
-      emit('move', vector);
+  var evt_ix = 0;
+  document.addEventListener('keydown', function(evt) {
+    if (evt.keyCode == RIGHT) {
+      var curr_evt = events[evt_ix];
+      emit(curr_evt.name, curr_evt.data);
+      evt_ix++;
     }
-  }
-}, 100);
+  });
+}
+else {
+  document.addEventListener('keydown', function(evt) {
+    if (!playing || !vectors[evt.keyCode])
+      return;
+
+    var vect = vectors[evt.keyCode];
+    vect.player_id = this_player_id;
+    emit('move', vect);
+    keys[evt.keyCode] = 1;
+    setTimeout(function() {
+      if (keys[evt.keyCode])
+        keys[evt.keyCode] = 2;
+    }, 500);
+  });
+
+  document.addEventListener('keyup', function(evt) {
+    if (evt.keyCode == SPACE)
+      emit('pause');
+    
+    keys[evt.keyCode] = 0;
+  });
+
+  setInterval(function() {
+    if (!playing) return;
+
+    for (vect in vectors) {
+      if (keys[vect] == 2) {
+        var vector = vectors[vect];
+        vector.player_id = this_player_id;
+        emit('move', vector);
+      }
+    }
+  }, 100);
+}
 
 function spawnWorld(num_beasts, num_nests, num_dynamites) {
   var max_x = region_size;

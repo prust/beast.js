@@ -83,6 +83,20 @@ function log(msg) {
     console.log(msg);
 }
 
+function ajax(url, cb) {
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200)
+        cb(null, xhr.responseText);
+      else
+        cb(new Error(xhr.status + " : " + xhr.responseText));
+    }
+  }
+  xhr.open("GET", url, true);
+  xhr.send();
+}
+
 // setup sound effects
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 var oscillator = audioCtx.createOscillator();
