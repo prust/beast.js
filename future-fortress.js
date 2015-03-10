@@ -11,11 +11,11 @@ var is_turret = false;
 canvas.addEventListener('mousedown', function(evt) {
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
-  if (sprite) {
+  if (sprite && sprite instanceof Block) {
     mode = 'destroy';
     emit('destroy', {pos: pos, player_id: this_player_id});
   }
-  else if (avail_blocks) {
+  else if (!sprite && avail_blocks) {
     mode = 'place';
     if (!is_turret || avail_blocks >= 8)
       emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
@@ -26,7 +26,7 @@ canvas.addEventListener('mousemove', function(evt) {
   if (!mode) return;
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
-  if (mode == 'destroy' && sprite)
+  if (mode == 'destroy' && sprite && sprite instanceof Block)
     emit('destroy', {pos: pos, player_id: this_player_id});
   else if (mode == 'place' && !sprite && avail_blocks)
     if (!is_turret || avail_blocks >= 8)
