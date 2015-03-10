@@ -198,7 +198,11 @@ inherits(Block, Sprite);
 Block.prototype.makeTurret = function() {
   if (this.is_turret) return;
   this.is_turret = true;
-  this.img = wall_bottom;
+  var pos_above = {x: this.x, y: this.y-1};
+  if (collide(pos_above, blocks))
+    this.img = wall_bottom;
+  else
+    this.img = wall_top;
   this.fillStyle = "#666666";
   
   // a cleaner way to do this would be to have a single object
