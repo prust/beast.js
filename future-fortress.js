@@ -95,7 +95,7 @@ var players = [];
 var playing = true;
 var is_debug = true;
 var snd_effect_time = Date.now();
-var block_size = 40;
+var block_size = 64;
 var peaceful_beasts = false; // makes beasts move randomly instead of toward you
 var server_time = 0;
 var this_player_id = Math.random();
@@ -103,6 +103,28 @@ var this_player = null;
 
 var playback = false;
 var offline = !window.io;
+
+var rock1, rock2, grass, wall_top, wall_bottom;
+loadImage('sprites/grass.png', function(err, img) {
+  if (err) throw err;
+  grass = img;
+});
+loadImage('sprites/rock-1.png', function(err, img) {
+  if (err) throw err;
+  rock1 = img;
+});
+loadImage('sprites/rock-2.png', function(err, img) {
+  if (err) throw err;
+  rock2 = img;
+});
+loadImage('sprites/wall-top.png', function(err, img) {
+  if (err) throw err;
+  wall_top = img;
+});
+loadImage('sprites/wall-bottom.png', function(err, img) {
+  if (err) throw err;
+  wall_bottom = img;
+});
 
 if (offline || playback) {
   window.emit = function(name, data) {

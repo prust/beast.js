@@ -21,8 +21,15 @@ Sprite.prototype.move = function(vect) {
     sprite.move(vect);
 };
 Sprite.prototype.draw = function() {
-  ctx.fillStyle = this.fillStyle;
-  ctx.fillRect(this.x * block_size - viewport.x * block_size, this.y * block_size - viewport.y * block_size, block_size, block_size);
+  var x = this.x * block_size - viewport.x * block_size;
+  var y = this.y * block_size - viewport.y * block_size;
+  if (this.img) {
+    ctx.drawImage(this.img, x, y);
+  }
+  else {
+    ctx.fillStyle = this.fillStyle;
+    ctx.fillRect(x, y, block_size, block_size);
+  }
 };
 Sprite.prototype.destroy = function() {
   if (this.is_destroyed) return;
@@ -182,6 +189,7 @@ function clone(dir) {
 function Block(pos) {
   Block.super_.call(this, pos);
   this.fillStyle = "#888888";
+  this.img = window['rock' + (m.random() < 0.8 ? '1' : '2')];
   this.movable = true;
   this.arr = blocks;
   this.is_turret = false;
@@ -190,6 +198,7 @@ inherits(Block, Sprite);
 Block.prototype.makeTurret = function() {
   if (this.is_turret) return;
   this.is_turret = true;
+  this.img = wall_bottom;
   this.fillStyle = "#666666";
   
   // a cleaner way to do this would be to have a single object

@@ -97,6 +97,14 @@ function ajax(url, cb) {
   xhr.send();
 }
 
+function loadImage(url, cb) {
+  var img = new Image();
+  img.onload = function() {
+    cb(null, img);
+  };
+  img.src = url;
+}
+
 // setup sound effects
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 var oscillator = audioCtx.createOscillator();
