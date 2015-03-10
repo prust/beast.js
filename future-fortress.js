@@ -27,10 +27,10 @@ canvas.addEventListener('mousemove', function(evt) {
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
   if (mode == 'destroy' && sprite)
-    emit('destroy', {pos: pos});
-  else if (mode == 'place' && !sprite)
+    emit('destroy', {pos: pos, player_id: this_player_id});
+  else if (mode == 'place' && !sprite && avail_blocks)
     if (!is_turret || avail_blocks >= 8)
-      emit('place', {pos: pos, is_turret: is_turret});
+      emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
 });
 
 canvas.addEventListener('mouseup', function(evt) {
