@@ -101,7 +101,7 @@ var server_time = 0;
 var this_player_id = Math.random();
 var this_player = null;
 
-var playback = true;
+var playback = false;
 var offline = !window.io;
 
 if (offline || playback) {

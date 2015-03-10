@@ -149,10 +149,10 @@ Beast.prototype.move = function(vect) {
     }
   }
 
-    if (chosen_dir) {
-      this.x += chosen_dir.x;
-      this.y += chosen_dir.y;
-    }
+  if (chosen_dir) {
+    this.x += chosen_dir.x;
+    this.y += chosen_dir.y;
+  }
 
   // game over!
   if (player && (this.x == player.x && this.y == player.y))
