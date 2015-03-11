@@ -5,20 +5,18 @@ canvas.setAttribute('width', viewport.width);
 canvas.setAttribute('height', viewport.height);
 var ctx = canvas.getContext('2d');
 
-var avail_blocks = 0;
 var mode;
 var is_turret = false;
 canvas.addEventListener('mousedown', function(evt) {
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
-  if (sprite && sprite instanceof Block) {
+  if (sprite) {
     mode = 'destroy';
     emit('destroy', {pos: pos, player_id: this_player_id});
   }
-  else if (!sprite && avail_blocks) {
+  else {
     mode = 'place';
-    if (!is_turret || avail_blocks >= 8)
-      emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
+    emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
   }
 });
 
@@ -26,25 +24,14 @@ canvas.addEventListener('mousemove', function(evt) {
   if (!mode) return;
   var pos = posFromEvt(evt);
   var sprite = collide(pos, sprites);
-  if (mode == 'destroy' && sprite && sprite instanceof Block)
+  if (mode == 'destroy' && sprite)
     emit('destroy', {pos: pos, player_id: this_player_id});
-  else if (mode == 'place' && !sprite && avail_blocks)
-    if (!is_turret || avail_blocks >= 8)
-      emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
+  else if (mode == 'place' && !sprite)
+    emit('place', {pos: pos, is_turret: is_turret, player_id: this_player_id});
 });
 
 canvas.addEventListener('mouseup', function(evt) {
   mode = null;
-});
-
-document.addEventListener('keypress', function(evt) {
-  var ch = String.fromCharCode(evt.which);
-  if (ch == 't')
-    is_turret = !is_turret;
-  if (ch == 'p')
-    peaceful_beasts = !peaceful_beasts;
-  if (ch == 'r')
-    emit('report');
 });
 
 function posFromEvt(evt) {
@@ -54,27 +41,34 @@ function posFromEvt(evt) {
 
 function destroy(opts) {
   var sprite = collide(opts.pos, sprites);
-  if (!sprite)
+  if (!sprite || !(sprite instanceof Block))
     return;
 
+  var player = getPlayer(opts.player_id);
   sprite.destroy();
-  if (opts.player_id == this_player_id)
-    avail_blocks += 2;
+  player.avail_blocks += 2;
 }
 
 function place(opts) {
   var pos = opts.pos;
+  var sprite = collide(opts.pos, sprites);
+  var player = getPlayer(opts.player_id);
+
+  if (sprite || !player.avail_blocks)
+    return;
+  if (opts.is_turret && player.avail_blocks < 8)
+    return;
+
   placeBlock(pos, opts.is_turret);
 
   if (opts.is_turret) {
     placeBlock({x: pos.x, y: pos.y + 1}, true);
     placeBlock({x: pos.x + 1, y: pos.y}, true);
     placeBlock({x: pos.x + 1, y: pos.y + 1}, true);
-    if (opts.player_id == this_player_id)
-      avail_blocks -= 8;
+    player.avail_blocks -= 8;
   }
-  else if (opts.player_id == this_player_id) {
-    avail_blocks--;
+  else {
+    player.avail_blocks--;
   }
 }
 
@@ -90,6 +84,16 @@ function toBlockCoords(pos) {
   return {x: Math.floor(pos.x / block_size) + viewport.x, y: Math.floor(pos.y / block_size) + viewport.y};
 }
 
+document.addEventListener('keypress', function(evt) {
+  var ch = String.fromCharCode(evt.which);
+  if (ch == 't')
+    is_turret = !is_turret;
+  if (ch == 'p')
+    peaceful_beasts = !peaceful_beasts;
+  if (ch == 'r')
+    emit('report');
+});
+
 var blocks = [], beasts = [], nests = [], dynamites = [], sprites = [];
 var players = [];
 var playing = true;
@@ -103,6 +107,12 @@ var this_player = null;
 
 var playback = false;
 var offline = !window.io;
+
+function getPlayer(player_id) {
+  return players.filter(function(pl) {
+    return pl.id == player_id;
+  })[0];
+}
 
 var rock1, rock2, grass, wall_top, wall_bottom;
 loadImage('sprites/grass.png', function(err, img) {
@@ -180,7 +190,7 @@ function handleEvent(evt) {
     init(evt.data);
   }
   else if (evt.name == 'move') {
-    player = players.filter(function(pl) { return pl.id == evt.data.player_id; })[0];
+    player = getPlayer(evt.data.player_id);
     if (player.canMove(evt.data))
       player.move(evt.data);
   }

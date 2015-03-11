@@ -54,6 +54,7 @@ function Player(opts) {
   this.fillStyle = opts.color;
   this.arr = [this];
   this.movable = true;
+  this.avail_blocks = 0;
 }
 inherits(Player, Sprite);
 Player.prototype.move = function(vect) {
