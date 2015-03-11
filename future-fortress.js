@@ -114,10 +114,14 @@ function getPlayer(player_id) {
   })[0];
 }
 
-var rock1, rock2, grass, wall_top, wall_bottom;
+var rock1, rock2, grass, rocks, wall_top, wall_bottom, ship, beast, bomb, bomb2;
 loadImage('sprites/grass.png', function(err, img) {
   if (err) throw err;
   grass = img;
+});
+loadImage('sprites/rock.png', function(err, img) {
+  if (err) throw err;
+  rocks = img;
 });
 loadImage('sprites/rock-1.png', function(err, img) {
   if (err) throw err;
@@ -134,6 +138,22 @@ loadImage('sprites/wall-top.png', function(err, img) {
 loadImage('sprites/wall-bottom.png', function(err, img) {
   if (err) throw err;
   wall_bottom = img;
+});
+loadImage('sprites/ship.png', function(err, img) {
+  if (err) throw err;
+  ship = img;
+});
+loadImage('sprites/beast.png', function(err, img) {
+  if (err) throw err;
+  beast = img;
+});
+loadImage('sprites/bomb.png', function(err, img) {
+  if (err) throw err;
+  bomb = img;
+});
+loadImage('sprites/bomb-2.png', function(err, img) {
+  if (err) throw err;
+  bomb2 = img;
 });
 
 if (offline || playback) {
@@ -223,15 +243,15 @@ function handleEvent(evt) {
 function init(opts) {
   window.m = new MersenneTwister(opts.seed);
   window.regions = [
-    {x: -1, y: -1, color: random(bg_colors)},
-    {x: 0, y: -1, color: random(bg_colors)},
-    {x: 1, y: -1, color: random(bg_colors)},
-    {x: -1, y: 0, color: random(bg_colors)},
-    {x: 0, y: 0, color: random(bg_colors)},
-    {x: 1, y: 0, color: random(bg_colors)},
-    {x: -1, y: 1, color: random(bg_colors)},
-    {x: 0, y: 1, color: random(bg_colors)},
-    {x: 1, y: 1, color: random(bg_colors)}
+    {x: -1, y: -1, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 0, y: -1, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 1, y: -1, color: random(bg_colors), img: random([grass, rocks])},
+    {x: -1, y: 0, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 0, y: 0, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 1, y: 0, color: random(bg_colors), img: random([grass, rocks])},
+    {x: -1, y: 1, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 0, y: 1, color: random(bg_colors), img: random([grass, rocks])},
+    {x: 1, y: 1, color: random(bg_colors), img: random([grass, rocks])}
   ];
   spawnWorld(4, 1, 4);
 
@@ -356,9 +376,17 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
 
 function draw() {
     ctx.clearRect(0, 0, viewport.width, viewport.height);
-    regions.forEach(function(bg) {
-      ctx.fillStyle = bg.color;
-      ctx.fillRect(bg.x * region_size * block_size - viewport.x * block_size, bg.y * region_size * block_size - viewport.y * block_size, region_size * block_size, region_size * block_size);
+
+    var terrain_size = 40; // terrain blocks are only 40px
+    var num_terrains = region_size * block_size / terrain_size;
+    regions.forEach(function(region) {
+      //ctx.fillStyle = bg.color;
+      //ctx.fillRect(bg.x * region_size * block_size - viewport.x * block_size, bg.y * region_size * block_size - viewport.y * block_size, region_size * block_size, region_size * block_size);
+      var starting_x = region.x * region_size * block_size - viewport.x * block_size
+      var starting_y = region.y * region_size * block_size - viewport.y * block_size;
+      for (var x = 0; x <= num_terrains; x++)
+        for (var y = 0; y <= num_terrains; y++)
+          ctx.drawImage(region.img, starting_x + x * terrain_size, starting_y + y * terrain_size);
     });
 
     // only play sound effects for 50ms

@@ -52,6 +52,7 @@ function Player(opts) {
   this.id = opts.id;
   // this.fillStyle = "#3333CC";
   this.fillStyle = opts.color;
+  this.img = ship;
   this.arr = [this];
   this.movable = true;
   this.avail_blocks = 0;
@@ -69,6 +70,7 @@ Player.prototype.destroy = function() {
 function Beast(pos) {
   Beast.super_.call(this, pos);
   this.fillStyle = "rgb(0,0,0)";
+  this.img = beast;
   this.arr = beasts;
 }
 inherits(Beast, Sprite);
@@ -290,6 +292,7 @@ Nest.prototype.destroy = function() {
 function Dynamite(pos) {
   Dynamite.super_.call(this, pos);
   this.fillStyle = "#BB0000";
+  this.img = bomb;
   this.ticking = false;
   this.movable = true;
   this.arr = dynamites;
@@ -314,8 +317,10 @@ Dynamite.prototype.startTicking = function() {
     this.tick_times++
     if (this.tick_times < 4) {
       this.fillStyle = "rgb(125,0,0)";
+      this.img = bomb2;
       setTimeout(function() {
         this.fillStyle = "rgb(255,0,0)";
+        this.img = bomb;
       }.bind(this), 100);
     }
     // SHE'S GONNA BLOW!!!
