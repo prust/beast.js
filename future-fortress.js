@@ -355,7 +355,7 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
 }
 
 function draw() {
-    ctx.clearRect(0, 0, viewport.width, viewport.height);
+    ctx.clearRect(viewport.transform_x, viewport.transform_y, viewport.width, viewport.height);
     regions.forEach(function(bg) {
       ctx.fillStyle = bg.color;
       ctx.fillRect(bg.x * region_size * block_size - viewport.x * block_size, bg.y * region_size * block_size - viewport.y * block_size, region_size * block_size, region_size * block_size);
@@ -383,24 +383,27 @@ function Viewport(width, height) {
   this.y = 0;
   this.width = width;
   this.height = height;
+  this.transform_x = 0;
+  this.transform_y = 0;
 }
 Viewport.prototype.follow = function(pos) {
   var perct_x = (pos.x - this.x) * block_size / this.width;
   var perct_y = (pos.y - this.y) * block_size / this.height;
   if (perct_x > .8) {
     var dest_x = Math.round(this.width * .75 / block_size);
-    this.x = pos.x - dest_x;
+    this.transform_x = (pos.x - dest_x) * block_size;
   }
   else if (perct_x < .2) {
     var dest_x = Math.round(this.width * .25 / block_size);
-    this.x = pos.x - dest_x; 
+    this.transform_x = (pos.x - dest_x) * block_size; 
   }
   if (perct_y > .8) {
     var dest_y = Math.round(this.height * .75 / block_size);
-    this.y = pos.y - dest_y;
+    this.transform_y = (pos.y - dest_y) * block_size;
   }
   else if (perct_y < .2) {
     var dest_y = Math.round(this.height * .25 / block_size);
-    this.y = pos.y - dest_y;
+    this.transform_y = (pos.y - dest_y) * block_size;
   }
+  ctx.setTransform(1, 0, 0, 1, -this.transform_x, -this.transform_y);
 };
