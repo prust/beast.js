@@ -160,9 +160,9 @@ else {
   interval.fns = [];
 }
 
-var rock1, rock2, grass, rocks, wall_top, wall_bottom, ship, beast, bomb, bomb2;
+var rock1, rock2, grass, grass_tl, grass_tr, grass_bl, grass_br, rocks, rock_b, rock_t, rock_l, rock_r, rock_tl, rock_tr, rock_bl, rock_br, wall_top, wall_bottom, ship, beast, bomb, bomb2;
 var n_loaded = 0;
-var n_total = 10;
+var n_total = 22;
 loadImage('sprites/grass.png', function(err, img) {
   if (err) throw err;
   grass = img;
@@ -170,9 +170,93 @@ loadImage('sprites/grass.png', function(err, img) {
   if (n_loaded == n_total)
     done();
 });
+loadImage('sprites/grass-tl.png', function(err, img) {
+  if (err) throw err;
+  grass_tl = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/grass-tr.png', function(err, img) {
+  if (err) throw err;
+  grass_tr = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/grass-bl.png', function(err, img) {
+  if (err) throw err;
+  grass_bl = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/grass-br.png', function(err, img) {
+  if (err) throw err;
+  grass_br = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
 loadImage('sprites/rock.png', function(err, img) {
   if (err) throw err;
   rocks = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-b.png', function(err, img) {
+  if (err) throw err;
+  rock_b = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-t.png', function(err, img) {
+  if (err) throw err;
+  rock_t = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-l.png', function(err, img) {
+  if (err) throw err;
+  rock_l = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-r.png', function(err, img) {
+  if (err) throw err;
+  rock_r = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-tl.png', function(err, img) {
+  if (err) throw err;
+  rock_tl = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-tr.png', function(err, img) {
+  if (err) throw err;
+  rock_tr = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-bl.png', function(err, img) {
+  if (err) throw err;
+  rock_bl = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-br.png', function(err, img) {
+  if (err) throw err;
+  rock_br = img;
   n_loaded++;
   if (n_loaded == n_total)
     done();
@@ -287,6 +371,9 @@ function init(opts) {
     {x: 0, y: 1, color: random(bg_colors), img: random([grass, rocks])},
     {x: 1, y: 1, color: random(bg_colors), img: random([grass, rocks])}
   ];
+  regions.forEach(function(region) {
+    populateRegion(region);
+  });
   spawnWorld(4, 1, 4);
 
   window.artist = new Artist(ctx);
@@ -302,6 +389,130 @@ function init(opts) {
       beast.move();
     });
   }, 1000);
+}
+
+function populateRegion(region) {
+  var arr;
+  if (region.img == grass)
+    arr = [grass, grass, grass, rocks];
+  else
+    arr = [rocks, rocks, rocks, grass];
+
+  region.cols = [];
+
+  var terrain_size = 40; // terrain blocks are only 40px
+  var num_terrains = region_size * block_size / terrain_size;
+  for (var x = 0; x <= num_terrains; x++) {
+    var col = [];
+    for (var y = 0; y <= num_terrains; y++) {
+      var tile = {x: x, y: y};
+      if (x % 2 == 0 && y % 2 == 0)
+        tile.img = random(arr);
+      col.push(tile);
+    }
+    region.cols.push(col);
+  }
+
+  for (var x = 0; x <= num_terrains; x++) {
+    for (var y = 0; y <= num_terrains; y++) {
+      if (x % 2 == 0 && y % 2 == 1) {
+        var tile = region.cols[x][y];
+        var above = region.cols[x][y-1];
+        var below = region.cols[x][y+1];
+        if (!above || !above.img || !below || !below.img)
+          return;
+        if (above.img == rocks && below.img == rocks)
+          tile.img = rocks;
+        if (above.img == grass && below.img == grass)
+          tile.img = grass;
+        if (above.img == grass && below.img == rocks)
+          tile.img = rock_b;
+        if (above.img == rocks && below.img == grass)
+          tile.img = rock_t;
+      }
+    }
+  }
+
+  for (var x = 0; x <= num_terrains; x++) {
+    for (var y = 0; y <= num_terrains; y++) {
+      if (x % 2 == 1 && y % 2 == 0) {
+        var tile = region.cols[x][y];
+        var left = region.cols[x-1][y];
+        var right = region.cols[x+1][y];
+        if (!left || !left.img || !right || !right.img)
+          return;
+        if (left.img == rocks && right.img == rocks)
+          tile.img = rocks;
+        if (left.img == grass && right.img == grass)
+          tile.img = grass;
+        if (left.img == grass && right.img == rocks)
+          tile.img = rock_r;
+        if (left.img == rocks && right.img == grass)
+          tile.img = rock_l;
+      }
+    }
+  }
+
+  for (var x = 0; x <= num_terrains; x++) {
+    for (var y = 0; y <= num_terrains; y++) {
+      if (x % 2 == 1 && y % 2 == 1) {
+        var tile = region.cols[x][y];
+        
+        // look at diagonal tiles b/c these are the ones w/ solid fills
+        var top_right = region.cols[x+1][y-1];
+        var top_left = region.cols[x-1][y-1];
+        var bottom_right = region.cols[x+1][y+1];
+        var bottom_left = region.cols[x-1][y+1];
+
+        if (!top_right || !top_left || !bottom_right || !bottom_left)
+          return;
+
+        if (top_left.img == rocks && top_right.img == rocks && bottom_left.img == rocks && bottom_right.img == rocks)
+          tile.img = rocks;
+        if (top_left.img == grass && top_right.img == grass && bottom_left.img == grass && bottom_right.img == grass)
+          tile.img = grass;
+
+        // similar to above
+        if (top_left.img == grass && top_right.img == rocks && bottom_left.img == grass && bottom_right.img == rocks)
+          tile.img = rock_r;
+        if (top_left.img == rocks && top_right.img == grass && bottom_left.img == rocks && bottom_right.img == grass)
+          tile.img = rock_l;
+
+        // similar to the ones above that
+        if (top_left.img == grass && top_right.img == grass && bottom_left.img == rocks && bottom_right.img == rocks)
+          tile.img = rock_b;
+        if (top_left.img == rocks && top_right.img == rocks && bottom_left.img == grass && bottom_right.img == grass)
+          tile.img = rock_t;
+
+        // grass in one corner
+        if (top_left.img == grass && top_right.img == rocks && bottom_left.img == rocks && bottom_right.img == rocks)
+          tile.img = grass_tl;
+        if (top_left.img == rocks && top_right.img == grass && bottom_left.img == rocks && bottom_right.img == rocks)
+          tile.img = grass_tr;
+        if (top_left.img == rocks && top_right.img == rocks && bottom_left.img == grass && bottom_right.img == rocks)
+          tile.img = grass_bl;
+        if (top_left.img == rocks && top_right.img == rocks && bottom_left.img == rocks && bottom_right.img == grass)
+          tile.img = grass_br;
+
+        // rocks in one corner
+        if (top_left.img == rocks && top_right.img == grass && bottom_left.img == grass && bottom_right.img == grass)
+          tile.img = rock_tl;
+        if (top_left.img == grass && top_right.img == rocks && bottom_left.img == grass && bottom_right.img == grass)
+          tile.img = rock_tr;
+        if (top_left.img == grass && top_right.img == grass && bottom_left.img == rocks && bottom_right.img == grass)
+          tile.img = rock_bl;
+        if (top_left.img == grass && top_right.img == grass && bottom_left.img == grass && bottom_right.img == rocks)
+          tile.img = rock_br;
+
+        // diagonals (not supplied by graphics, should we avoid this?)
+        if (top_left.img == grass && top_right.img == rocks && bottom_left.img == rocks && bottom_right.img == grass)
+          tile.img = grass_br;
+        if (top_left.img == rocks && top_right.img == grass && bottom_left.img == grass && bottom_right.img == rocks)
+          tile.img = grass_bl;
+      }
+    }
+  }
+
 }
 
 var LEFT = 37;
@@ -457,9 +668,13 @@ Artist.prototype.draw = function() {
   regions.forEach(function(region) {
     var starting_x = region.x * region_size * block_size;
     var starting_y = region.y * region_size * block_size;
-    for (var x = 0; x <= num_terrains; x++)
-      for (var y = 0; y <= num_terrains; y++)
-        this.ctx.drawImage(region.img, starting_x + x * terrain_size, starting_y + y * terrain_size);
+    for (var x = 0; x <= num_terrains; x++) {
+      for (var y = 0; y <= num_terrains; y++) {
+        var tile = region.cols[x][y];
+        if (tile.img)
+          this.ctx.drawImage(tile.img, starting_x + x * terrain_size, starting_y + y * terrain_size);
+      }
+    }
   }.bind(this));
 
   // only play sound effects for 50ms
