@@ -78,6 +78,22 @@ function difference(sprite1, sprite2) {
   return {x: sprite1.x - sprite2.x, y: sprite1.y - sprite2.y};
 }
 
+// AABB collision detection from http://gamedev.stackexchange.com/a/913, assumes neither rect is rotated
+function overlap(a, b) {
+  return !(b.x > (a.x + a.width)
+        || (b.x + b.width) < a.x
+        || b.y > (a.y + a.height)
+        || (b.y + b.height) < a.y);
+}
+
+// simple x/y grid collision
+function collide(sprite, sprites) {
+  var n_sprites = sprites.length;
+  for (var n = 0; n < n_sprites; n++)
+    if (sprites[n] != sprite && sprite.x == sprites[n].x && sprite.y == sprites[n].y)
+      return sprites[n];
+}
+
 function log(msg) {
   if (is_debug)
     console.log(msg);

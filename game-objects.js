@@ -1,8 +1,11 @@
 function Sprite(pos) {
   this.x = pos.x;
   this.y = pos.y;
+  this.width = block_size;
+  this.height = block_size;
   this.is_destroyed = false;
 }
+
 Sprite.prototype.canMove = function(vect) {
   if (!this.movable)
     return false;
@@ -13,16 +16,18 @@ Sprite.prototype.canMove = function(vect) {
   else
     return true;
 };
-Sprite.prototype.move = function(vect) {  
+
+Sprite.prototype.move = function(vect) {
   this.x += vect.x;
   this.y += vect.y;
   var sprite = collide(this, sprites);
   if (sprite && sprite.movable)
     sprite.move(vect);
 };
+
 Sprite.prototype.draw = function() {
-  var x = this.x * block_size - viewport.x * block_size;
-  var y = this.y * block_size - viewport.y * block_size;
+  var x = this.x * block_size;
+  var y = this.y * block_size;
   if (this.img) {
     ctx.drawImage(this.img, x, y);
   }
@@ -31,6 +36,7 @@ Sprite.prototype.draw = function() {
     ctx.fillRect(x, y, block_size, block_size);
   }
 };
+
 Sprite.prototype.destroy = function() {
   if (this.is_destroyed) return;
   this.is_destroyed = true;

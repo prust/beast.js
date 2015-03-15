@@ -81,7 +81,7 @@ function placeBlock(pos, is_turret) {
 }
 
 function toBlockCoords(pos) {
-  return {x: Math.floor(pos.x / block_size) + viewport.x, y: Math.floor(pos.y / block_size) + viewport.y};
+  return {x: Math.floor(pos.x / block_size), y: Math.floor(pos.y / block_size)};
 }
 
 document.addEventListener('keypress', function(evt) {
@@ -114,62 +114,22 @@ function getPlayer(player_id) {
   })[0];
 }
 
-var rock1, rock2, grass, rocks, wall_top, wall_bottom, ship, beast, bomb, bomb2;
-loadImage('sprites/grass.png', function(err, img) {
-  if (err) throw err;
-  grass = img;
-});
-loadImage('sprites/rock.png', function(err, img) {
-  if (err) throw err;
-  rocks = img;
-});
-loadImage('sprites/rock-1.png', function(err, img) {
-  if (err) throw err;
-  rock1 = img;
-});
-loadImage('sprites/rock-2.png', function(err, img) {
-  if (err) throw err;
-  rock2 = img;
-});
-loadImage('sprites/wall-top.png', function(err, img) {
-  if (err) throw err;
-  wall_top = img;
-});
-loadImage('sprites/wall-bottom.png', function(err, img) {
-  if (err) throw err;
-  wall_bottom = img;
-});
-loadImage('sprites/ship.png', function(err, img) {
-  if (err) throw err;
-  ship = img;
-});
-loadImage('sprites/beast.png', function(err, img) {
-  if (err) throw err;
-  beast = img;
-});
-loadImage('sprites/bomb.png', function(err, img) {
-  if (err) throw err;
-  bomb = img;
-});
-loadImage('sprites/bomb-2.png', function(err, img) {
-  if (err) throw err;
-  bomb2 = img;
-});
-
 if (offline || playback) {
   window.emit = function(name, data) {
     handleEvent({name: name, data: data});
   };
 }
 else {
-  var socket = io(location.origin, {multiplex: false});
-  socket.on('evt', handleEvent);
-  socket.on('playEvents', function(events) {
-    events.forEach(function(evt) {
-      handleEvent(evt);
+  window.done = function() {
+    window.socket = io(location.origin, {multiplex: false});
+    socket.on('evt', handleEvent);
+    socket.on('playEvents', function(events) {
+      events.forEach(function(evt) {
+        handleEvent(evt);
+      });
+      joinGame();
     });
-    joinGame();
-  });
+  };
 
   window.emit = function(name, data) {
     socket.emit('evt', {name: name, data: data});
@@ -177,10 +137,10 @@ else {
 }
 
 if (offline) {
-  setTimeout(function() {
+  window.done = function() {
     init({seed: Date.now()});
     joinGame();
-  }, 0);
+  };
   window.interval = setInterval;
   window.clearInt = clearInterval;
 }
@@ -199,6 +159,80 @@ else {
   };
   interval.fns = [];
 }
+
+var rock1, rock2, grass, rocks, wall_top, wall_bottom, ship, beast, bomb, bomb2;
+var n_loaded = 0;
+var n_total = 10;
+loadImage('sprites/grass.png', function(err, img) {
+  if (err) throw err;
+  grass = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock.png', function(err, img) {
+  if (err) throw err;
+  rocks = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-1.png', function(err, img) {
+  if (err) throw err;
+  rock1 = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/rock-2.png', function(err, img) {
+  if (err) throw err;
+  rock2 = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-top.png', function(err, img) {
+  if (err) throw err;
+  wall_top = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-bottom.png', function(err, img) {
+  if (err) throw err;
+  wall_bottom = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/ship.png', function(err, img) {
+  if (err) throw err;
+  ship = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/beast.png', function(err, img) {
+  if (err) throw err;
+  beast = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/bomb.png', function(err, img) {
+  if (err) throw err;
+  bomb = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/bomb-2.png', function(err, img) {
+  if (err) throw err;
+  bomb2 = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
 
 function joinGame() {
   emit('new_player', {id: this_player_id, color: 'rgb(' + [Math.round(Math.random() * 255), Math.round(Math.random() * 255), Math.round(Math.random() * 255)].join(',') + ')'});
@@ -255,7 +289,9 @@ function init(opts) {
   ];
   spawnWorld(4, 1, 4);
 
-  requestAnimationFrame(draw);
+  window.artist = new Artist(ctx);
+  artist.startDrawing();
+  
   interval(function() {
     if (!playing || !beasts.length) return;
 
@@ -374,49 +410,15 @@ function spawnWorld(num_beasts, num_nests, num_dynamites) {
   sprites = sprites.concat(blocks);
 }
 
-function draw() {
-    ctx.clearRect(viewport.transform_x, viewport.transform_y, viewport.width, viewport.height);
-
-    var terrain_size = 40; // terrain blocks are only 40px
-    var num_terrains = region_size * block_size / terrain_size;
-    regions.forEach(function(region) {
-      //ctx.fillStyle = bg.color;
-      //ctx.fillRect(bg.x * region_size * block_size - viewport.x * block_size, bg.y * region_size * block_size - viewport.y * block_size, region_size * block_size, region_size * block_size);
-      var starting_x = region.x * region_size * block_size - viewport.x * block_size
-      var starting_y = region.y * region_size * block_size - viewport.y * block_size;
-      for (var x = 0; x <= num_terrains; x++)
-        for (var y = 0; y <= num_terrains; y++)
-          ctx.drawImage(region.img, starting_x + x * terrain_size, starting_y + y * terrain_size);
-    });
-
-    // only play sound effects for 50ms
-    if (gainNode.gain.value && Date.now() - snd_effect_time > 50)
-      gainNode.gain.value = 0;
-
-    sprites.forEach(function(sprite) {
-        sprite.draw();
-    });
-    requestAnimationFrame(draw);
-}
-
-function collide(sprite, sprites) {
-    var n_sprites = sprites.length;
-    for (var n = 0; n < n_sprites; n++)
-        if (sprites[n] != sprite && sprite.x == sprites[n].x && sprite.y == sprites[n].y)
-            return sprites[n];
-}
-
 function Viewport(width, height) {
-  this.x = 0;
-  this.y = 0;
   this.width = width;
   this.height = height;
   this.transform_x = 0;
   this.transform_y = 0;
 }
 Viewport.prototype.follow = function(pos) {
-  var perct_x = (pos.x - this.x) * block_size / this.width;
-  var perct_y = (pos.y - this.y) * block_size / this.height;
+  var perct_x = (pos.x * block_size - this.transform_x) / this.width;
+  var perct_y = (pos.y * block_size - this.transform_y) / this.height;
   if (perct_x > .8) {
     var dest_x = Math.round(this.width * .75 / block_size);
     this.transform_x = (pos.x - dest_x) * block_size;
@@ -434,4 +436,50 @@ Viewport.prototype.follow = function(pos) {
     this.transform_y = (pos.y - dest_y) * block_size;
   }
   ctx.setTransform(1, 0, 0, 1, -this.transform_x, -this.transform_y);
+};
+
+function Artist(ctx) {
+  this.ctx = ctx;
+  this.draw = this.draw.bind(this);
+  this.first_time = true;
+}
+Artist.prototype.startDrawing = function() {
+  requestAnimationFrame(this.draw);
+};
+Artist.prototype.draw = function() {
+  if (this.first_time)
+    return this.drawAll();
+
+  this.ctx.clearRect(viewport.transform_x, viewport.transform_y, viewport.width, viewport.height);
+
+  var terrain_size = 40; // terrain blocks are only 40px
+  var num_terrains = region_size * block_size / terrain_size;
+  regions.forEach(function(region) {
+    var starting_x = region.x * region_size * block_size;
+    var starting_y = region.y * region_size * block_size;
+    for (var x = 0; x <= num_terrains; x++)
+      for (var y = 0; y <= num_terrains; y++)
+        this.ctx.drawImage(region.img, starting_x + x * terrain_size, starting_y + y * terrain_size);
+  }.bind(this));
+
+  // only play sound effects for 50ms
+  // TODO: move the event loop (requestAnimationFrame loop) out, so something else can manage audio
+  if (gainNode.gain.value && Date.now() - snd_effect_time > 50)
+    gainNode.gain.value = 0;
+
+  sprites.forEach(function(sprite) {
+    var pix = {x: sprite.x * block_size, y: sprite.y * block_size, width: block_size, height: block_size};
+    if (overlap(pix, {x: viewport.transform_x, y: viewport.transform_y, width: viewport.width, height: viewport.height}))
+      sprite.draw();
+  }.bind(this));
+
+  requestAnimationFrame(this.draw);
+};
+
+Artist.prototype.drawAll = function() {
+  sprites.forEach(function(sprite) {
+    sprite.draw();
+  });
+  this.first_time = false;
+  requestAnimationFrame(this.draw);
 };
