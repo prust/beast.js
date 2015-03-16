@@ -59,17 +59,17 @@ function place(opts) {
   if (opts.is_turret && player.avail_blocks < 8)
     return;
 
-  placeBlock(pos, opts.is_turret);
+  placeBlock(pos, true);
 
-  if (opts.is_turret) {
-    placeBlock({x: pos.x, y: pos.y + 1}, true);
-    placeBlock({x: pos.x + 1, y: pos.y}, true);
-    placeBlock({x: pos.x + 1, y: pos.y + 1}, true);
-    player.avail_blocks -= 8;
-  }
-  else {
+  // if (opts.is_turret) {
+  //   placeBlock({x: pos.x, y: pos.y + 1}, true);
+  //   placeBlock({x: pos.x + 1, y: pos.y}, true);
+  //   placeBlock({x: pos.x + 1, y: pos.y + 1}, true);
+  //   player.avail_blocks -= 8;
+  // }
+  // else {
     player.avail_blocks--;
-  }
+  // }
 }
 
 function placeBlock(pos, is_turret) {
@@ -160,9 +160,9 @@ else {
   interval.fns = [];
 }
 
-var rock1, rock2, grass, grass_tl, grass_tr, grass_bl, grass_br, rocks, rock_b, rock_t, rock_l, rock_r, rock_tl, rock_tr, rock_bl, rock_br, wall_top, wall_bottom, ship, beast, bomb, bomb2;
+var rock1, rock2, grass, grass_tl, grass_tr, grass_bl, grass_br, rocks, rock_b, rock_t, rock_l, rock_r, rock_tl, rock_tr, rock_bl, rock_br, wall, wall_l, wall_r, wall_h, wall_v, wall_t, wall_b, wall_tr, wall_tl, wall_br, wall_bl, ship, beast, bomb, bomb2;
 var n_loaded = 0;
-var n_total = 22;
+var n_total = 31;
 loadImage('sprites/grass.png', function(err, img) {
   if (err) throw err;
   grass = img;
@@ -275,16 +275,79 @@ loadImage('sprites/rock-2.png', function(err, img) {
   if (n_loaded == n_total)
     done();
 });
-loadImage('sprites/wall-top.png', function(err, img) {
+loadImage('sprites/wall.png', function(err, img) {
   if (err) throw err;
-  wall_top = img;
+  wall = img;
   n_loaded++;
   if (n_loaded == n_total)
     done();
 });
-loadImage('sprites/wall-bottom.png', function(err, img) {
+loadImage('sprites/wall-l.png', function(err, img) {
   if (err) throw err;
-  wall_bottom = img;
+  wall_l = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-r.png', function(err, img) {
+  if (err) throw err;
+  wall_r = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-h.png', function(err, img) {
+  if (err) throw err;
+  wall_h = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-v.png', function(err, img) {
+  if (err) throw err;
+  wall_v = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-t.png', function(err, img) {
+  if (err) throw err;
+  wall_t = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-b.png', function(err, img) {
+  if (err) throw err;
+  wall_b = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-tr.png', function(err, img) {
+  if (err) throw err;
+  wall_tr = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-tl.png', function(err, img) {
+  if (err) throw err;
+  wall_tl = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-br.png', function(err, img) {
+  if (err) throw err;
+  wall_br = img;
+  n_loaded++;
+  if (n_loaded == n_total)
+    done();
+});
+loadImage('sprites/wall-bl.png', function(err, img) {
+  if (err) throw err;
+  wall_bl = img;
   n_loaded++;
   if (n_loaded == n_total)
     done();

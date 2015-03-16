@@ -208,10 +208,6 @@ Block.prototype.makeTurret = function() {
   if (this.is_turret) return;
   this.is_turret = true;
   var pos_above = {x: this.x, y: this.y-1};
-  if (collide(pos_above, blocks))
-    this.img = wall_bottom;
-  else
-    this.img = wall_top;
   this.fillStyle = "#666666";
   
   // a cleaner way to do this would be to have a single object
@@ -233,6 +229,65 @@ Block.prototype.makeTurret = function() {
     }
   }.bind(this), destroy_interval);
 };
+
+Block.prototype.draw = function() {
+  if (!this.is_turret)
+    return Block.super_.prototype.draw.apply(this, arguments);
+
+  // turrets are twice as tall as normal blocks
+  var x = this.x, y = this.y;
+  var adj = adjacent(this, blocks).filter(function(b) { return b.is_turret; });
+  var top = findWhere(adj, {x: x, y: y - 1});
+  var bottom = findWhere(adj, {x: x, y: y + 1});
+  var left = findWhere(adj, {x: x - 1, y: y});
+  var right = findWhere(adj, {x: x + 1, y: y});
+
+  // auto-decide which wall image to display
+  var img;
+  if (top && left)
+    img = wall_br;
+  else if (top && right)
+    img = wall_bl;
+  else if (bottom && left)
+    img = wall_tr;
+  else if (bottom && right)
+    img = wall_tl;
+  else if (top && bottom)
+    img = wall_v;
+  else if (left && right)
+    img = wall_h;
+  else if (top)
+    img = wall_b;
+  else if (bottom)
+    img = wall_t;
+  else if (left)
+    img = wall_r;
+  else if (right)
+    img = wall_l;
+  else
+    img = wall;
+
+
+
+
+  ctx.drawImage(img, this.x * block_size, this.y * block_size - block_size);
+}
+
+function findWhere(arr, filters) {
+  var matches = [];
+
+  var len = arr.length;
+  for (var n = 0; n < len; n++) {
+    var obj = arr[n];
+    var found = true;
+    for (var key in filters) {
+      if (obj[key] != filters[key])
+        found = false;
+    }
+    if (found)
+      return obj;
+  }
+}
 
 Block.prototype.move = function(vect) {
     Block.super_.prototype.move.call(this, vect);
