@@ -244,7 +244,17 @@ Block.prototype.draw = function() {
 
   // auto-decide which wall image to display
   var img;
-  if (top && left)
+  if (top && bottom && left && right)
+    img = wall_i;
+  else if (top && bottom && left)
+    img = wall_ri;
+  else if (top && bottom && right)
+    img = wall_li;
+  else if (top && left && right)
+    img = wall_bi;
+  else if (bottom && left && right)
+    img = wall_ti;
+  else if (top && left)
     img = wall_br;
   else if (top && right)
     img = wall_bl;
