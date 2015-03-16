@@ -35,7 +35,7 @@ canvas.addEventListener('mouseup', function(evt) {
 });
 
 function posFromEvt(evt) {
-  var click_pos = {x: evt.pageX, y: evt.pageY};
+  var click_pos = {x: evt.pageX + viewport.transform_x, y: evt.pageY + viewport.transform_y};
   return toBlockCoords(click_pos);
 }
 
