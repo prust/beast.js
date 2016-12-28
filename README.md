@@ -35,3 +35,7 @@ If you see any bugs, please report them on the [issues page](https://github.com/
 ## Play!
 
 Go to http://prust.github.io/beast.js to play!
+
+## Update
+
+I wrote a more recent version of this in Lua: https://github.com/prust/beast-lua. It's not as complete as this one, but has better movement and probably better code.
